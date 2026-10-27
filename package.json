@@ -1,0 +1,21 @@
+{
+  "name": "organigrama-dinamico-corporativo",
+  "version": "2.0.0",
+  "description": "Visualizador interactivo de organigrama corporativo con soporte para cargos vacantes, persistencia JSON y exportación PDF 16:9",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -l 3000 .",
+    "dev": "npx serve -l 3000 ."
+  },
+  "keywords": [
+    "organigrama",
+    "org-chart",
+    "d3",
+    "hierarchy",
+    "excel",
+    "sheetjs",
+    "vercel"
+  ],
+  "author": "Executive Suite",
+  "license": "MIT"
+}

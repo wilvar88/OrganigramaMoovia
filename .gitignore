@@ -1,0 +1,14 @@
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Vercel y builds
+.vercel
+node_modules/
+
+# Archivos de respaldo temporal
+*.bak
+*.tmp
