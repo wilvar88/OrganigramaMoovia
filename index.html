@@ -1,0 +1,3505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organigrama Dinámico Corporativo | Executive Suite</title>
+  <meta name="description" content="Visualizador interactivo de organigrama corporativo con vista jerárquica y transversal, importación de Excel, soporte de cargos vacantes, persistencia JSON y exportación a presentación PDF en formato 16:9.">
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- CDN: SheetJS (xlsx.full.min.js) para parseo de archivos Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- CDN: D3.js v7 para cálculo y renderizado de árbol jerárquico interactivo -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
+
+  <!-- CDN: html2canvas y jsPDF para captura y exportación de slide ejecutiva a PDF 16:9 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    /* ==========================================================================
+       1. VARIABLES DE DISEÑO & SISTEMA DE TOKENS (NEUMORFISMO + GLASSMORFISMO)
+       ========================================================================== */
+    :root {
+      --brand-blue: #1f67f6;        /* Azul eléctrico vibrante */
+      --brand-teal: #23c4c4;        /* Teal / Cyan elegante */
+      --brand-mint: #28deb6;        /* Verde menta luminoso */
+
+      --navy-dark: #0b2546;         /* Azul marino profundo */
+      --navy-medium: #1f67f6;       /* Azul corporativo */
+      --navy-light: #1654cc;        /* Azul hover */
+      --lime-accent: #28deb6;       /* Acento brillante primario */
+      --lime-glow: rgba(40, 222, 182, 0.45);
+      --sky-accent: #23c4c4;        /* Acento secundario teal */
+      --sky-glow: rgba(35, 196, 196, 0.4);
+
+      /* Acentos para Cargos Vacantes */
+      --vacant-amber: #f59e0b;
+      --vacant-dark: #b45309;
+      --vacant-bg: #fffdf5;
+      --vacant-border: #f59e0b;
+
+      /* Escala de Fondos Blancos Limpios & Neumorfismo */
+      --bg-body: #f4f8fb;           /* Fondo blanco/nube suave */
+      --bg-card: #ffffff;           /* Superficie de tarjeta blanca */
+      --bg-card-light: #ffffff;
+      --card-border: rgba(35, 196, 196, 0.18);
+
+      /* Sombras Neumórficas */
+      --nm-flat: 8px 8px 20px rgba(11, 37, 70, 0.07), -8px -8px 20px #ffffff;
+      --nm-hover: 12px 12px 26px rgba(31, 103, 246, 0.14), -10px -10px 22px #ffffff;
+      --nm-inset: inset 3px 3px 7px rgba(11, 37, 70, 0.09), inset -3px -3px 7px #ffffff;
+      --nm-btn: 5px 5px 14px rgba(11, 37, 70, 0.07), -5px -5px 14px #ffffff;
+      --nm-btn-active: inset 2px 2px 5px rgba(11, 37, 70, 0.14), inset -2px -2px 5px #ffffff;
+
+      /* Glassmorfismo */
+      --glass-bg: rgba(255, 255, 255, 0.88);
+      --glass-bg-dark: rgba(11, 37, 70, 0.90);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.85);
+      --glass-blur: blur(16px);
+
+      /* Tipografía */
+      --font-primary: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --text-main: #0b2546;
+      --text-muted: #4e6582;
+      --text-subtle: #7f95ad;
+
+      /* Dimensiones de Tarjetas */
+      --card-width: 275px;
+      --card-height-full: 175px;
+      --card-height-privacy: 110px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --radius-full: 9999px;
+    }
+
+    /* Reset & Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-primary);
+      background: radial-gradient(circle at 15% 15%, #ffffff 0%, #f7fafc 50%, #edf3f9 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==========================================================================
+       2. TOP BAR & LOGO CORPORATIVO
+       ========================================================================== */
+    .header-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 20px rgba(11, 37, 70, 0.04);
+      padding: 10px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Contenedor del Logo de la Empresa (Superior Izquierda) */
+    .brand-logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      max-height: 48px;
+      max-width: 190px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+
+    .brand-logo-container:hover {
+      transform: scale(1.02);
+    }
+
+    .brand-logo-img {
+      max-height: 44px;
+      max-width: 180px;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 2px 6px rgba(11, 37, 70, 0.08));
+    }
+
+    .brand-logo-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-teal) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 4px 4px 12px rgba(31, 103, 246, 0.25), -2px -2px 6px #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      flex-shrink: 0;
+    }
+
+    .brand-logo-badge svg {
+      width: 24px;
+      height: 24px;
+      stroke: #ffffff;
+    }
+
+    .brand-info h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--navy-dark);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-info h1 .pro-pill {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(90deg, var(--brand-mint), var(--brand-teal));
+      color: #0b2546;
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 8px var(--lime-glow);
+    }
+
+    .brand-info p {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Acciones del Toolbar */
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Botones Neumórficos */
+    .nm-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 15px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: var(--font-primary);
+      color: var(--navy-dark);
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--nm-btn);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nm-btn:hover {
+      color: var(--brand-blue);
+      transform: translateY(-1px);
+      box-shadow: var(--nm-hover);
+      border-color: rgba(35, 196, 196, 0.4);
+    }
+
+    .nm-btn:active {
+      transform: translateY(1px);
+      box-shadow: var(--nm-btn-active);
+    }
+
+    .nm-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 2.2;
+    }
+
+    .nm-btn-primary {
+      background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-teal) 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 4px 4px 14px rgba(31, 103, 246, 0.3), -2px -2px 8px #ffffff;
+    }
+
+    .nm-btn-primary:hover {
+      color: #ffffff;
+      filter: brightness(1.06);
+      box-shadow: 6px 6px 18px rgba(31, 103, 246, 0.4), -3px -3px 10px #ffffff;
+    }
+
+    .nm-btn-accent {
+      background: linear-gradient(135deg, #0b2546 0%, #163e70 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 4px 4px 14px rgba(11, 37, 70, 0.25);
+    }
+
+    .nm-btn-accent:hover {
+      color: var(--brand-mint);
+      border-color: var(--brand-mint);
+    }
+
+    .nm-btn-sm {
+      padding: 5px 12px;
+      font-size: 0.74rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .nm-toggle-group {
+      display: inline-flex;
+      background: #eef4f9;
+      padding: 3px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--nm-inset);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      gap: 2px;
+    }
+
+    .nm-toggle-btn {
+      padding: 6px 13px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: var(--font-primary);
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-radius: calc(var(--radius-md) - 2px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nm-toggle-btn.active {
+      background: #ffffff;
+      color: var(--brand-blue);
+      box-shadow: 2px 2px 8px rgba(11, 37, 70, 0.08);
+    }
+
+    .nm-toggle-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Interruptor de Privacidad */
+    .privacy-switch-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--nm-btn);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+
+    .privacy-switch-wrap:hover {
+      border-color: var(--brand-teal);
+    }
+
+    .privacy-switch-wrap .label-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--navy-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .switch-ui {
+      width: 34px;
+      height: 18px;
+      background: #dbe4ef;
+      border-radius: var(--radius-full);
+      position: relative;
+      transition: background 0.25s ease;
+    }
+
+    .switch-handle {
+      width: 14px;
+      height: 14px;
+      background: #ffffff;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .privacy-switch-wrap.active .switch-ui {
+      background: linear-gradient(90deg, var(--brand-blue), var(--brand-teal));
+    }
+
+    .privacy-switch-wrap.active .switch-handle {
+      transform: translateX(16px);
+    }
+
+    /* Buscador en Tiempo Real */
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-box input {
+      padding: 8px 12px 8px 34px;
+      font-size: 0.82rem;
+      font-family: var(--font-primary);
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--nm-inset);
+      outline: none;
+      width: 190px;
+      color: var(--navy-dark);
+      transition: all 0.25s ease;
+    }
+
+    .search-box input:focus {
+      width: 240px;
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 3px rgba(31, 103, 246, 0.15);
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 10px;
+      width: 15px;
+      height: 15px;
+      stroke: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       3. FRANJA DE MÉTRICAS & INDICADORES DE MEMORIA
+       ========================================================================== */
+    .metrics-bar {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(35, 196, 196, 0.15);
+      padding: 7px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      z-index: 90;
+    }
+
+    .metric-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .metric-item strong {
+      color: var(--navy-dark);
+      font-weight: 700;
+    }
+
+    .metric-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--brand-blue);
+      box-shadow: 0 0 6px rgba(31, 103, 246, 0.6);
+    }
+
+    .metric-dot.lime {
+      background: var(--brand-mint);
+      box-shadow: 0 0 6px var(--lime-glow);
+    }
+
+    .metric-dot.amber {
+      background: var(--vacant-amber);
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+    }
+
+    .memory-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: var(--radius-sm);
+      background: rgba(31, 103, 246, 0.08);
+      border: 1px solid rgba(31, 103, 246, 0.2);
+      font-size: 0.74rem;
+      color: var(--navy-dark);
+    }
+
+    .btn-text-action {
+      background: none;
+      border: none;
+      color: var(--brand-blue);
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-family: inherit;
+      font-weight: 600;
+      padding: 0 4px;
+    }
+
+    .btn-text-action:hover {
+      color: var(--navy-dark);
+    }
+
+    /* ==========================================================================
+       4. VIEWPORT DEL ORGANIGRAMA (D3 SVG + CAPA DE NODOS HTML)
+       ========================================================================== */
+    .chart-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      min-height: calc(100vh - 120px);
+    }
+
+    .chart-viewport:active {
+      cursor: grabbing;
+    }
+
+    .chart-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .connector-path {
+      fill: none;
+      stroke: url(#linkGradient);
+      stroke-width: 2.2px;
+      stroke-linecap: round;
+      stroke-dasharray: none;
+      opacity: 0.85;
+      transition: stroke-width 0.2s ease, opacity 0.2s ease;
+    }
+
+    .connector-path:hover {
+      stroke-width: 3.5px;
+      opacity: 1;
+    }
+
+    .chart-nodes-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform-origin: 0 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       5. TARJETAS CORPORATIVAS (NEUMORFISMO + ESTILOS VACANTE)
+       ========================================================================== */
+    .org-card {
+      position: absolute;
+      width: 275px;
+      background: linear-gradient(145deg, #ffffff, #f7fafd);
+      border: 1px solid rgba(35, 196, 196, 0.22);
+      border-radius: var(--radius-lg);
+      box-shadow: 8px 8px 20px rgba(11, 37, 70, 0.07), -8px -8px 20px #ffffff;
+      padding: 13px 16px;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                  box-shadow 0.25s ease, 
+                  border-color 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      pointer-events: auto;
+    }
+
+    .org-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 12px 12px 28px rgba(31, 103, 246, 0.15), -10px -10px 24px #ffffff;
+      border-color: rgba(31, 103, 246, 0.45);
+    }
+
+    /* Acento para líder superior / CEO */
+    .org-card.is-ceo {
+      background: linear-gradient(160deg, #ffffff 0%, #f0f7fe 100%);
+      border: 1.5px solid rgba(31, 103, 246, 0.55);
+      box-shadow: 10px 10px 24px rgba(31, 103, 246, 0.14), -8px -8px 22px #ffffff, 0 0 16px rgba(35, 196, 196, 0.25);
+    }
+
+    /* ==========================================================================
+       ESTILOS EXCLUSIVOS PARA CARGOS VACANTES (PUNTO 3)
+       ========================================================================== */
+    .org-card.is-vacant {
+      border: 2px dashed var(--vacant-border);
+      background: linear-gradient(145deg, #ffffff 0%, var(--vacant-bg) 100%);
+      box-shadow: 6px 6px 20px rgba(245, 158, 11, 0.12), -6px -6px 16px #ffffff;
+    }
+
+    .org-card.is-vacant:hover {
+      border-color: #d97706;
+      box-shadow: 10px 10px 26px rgba(245, 158, 11, 0.22), -8px -8px 20px #ffffff;
+    }
+
+    .card-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 0.68rem;
+    }
+
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      color: #ffffff;
+      letter-spacing: 0.03em;
+      box-shadow: 1px 1px 5px rgba(31, 103, 246, 0.2);
+      flex-shrink: 0;
+    }
+
+    .level-badge.vacant-badge {
+      background: linear-gradient(135deg, var(--vacant-amber), #d97706);
+      box-shadow: 1px 1px 6px rgba(245, 158, 11, 0.35);
+    }
+
+    .level-badge .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--brand-mint);
+      box-shadow: 0 0 4px var(--lime-glow);
+    }
+
+    .level-badge.vacant-badge .dot {
+      background: #ffffff;
+      box-shadow: 0 0 4px #ffffff;
+    }
+
+    .gerencia-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #0b2546;
+      background: rgba(35, 196, 196, 0.12);
+      border: 1px solid rgba(35, 196, 196, 0.25);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 135px;
+    }
+
+    .card-personal-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.35s ease;
+      max-height: 80px;
+      opacity: 1;
+      overflow: hidden;
+    }
+
+    .card-avatar-ring {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-teal) 50%, var(--brand-mint) 100%);
+      box-shadow: 3px 3px 8px rgba(31, 103, 246, 0.15), -2px -2px 6px #ffffff;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .card-avatar-ring.vacant-avatar {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border: 1.5px dashed #b45309;
+      box-shadow: 2px 2px 8px rgba(245, 158, 11, 0.25);
+    }
+
+    .card-avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #dbe4ef;
+      border: 2px solid #ffffff;
+    }
+
+    .card-avatar-fallback {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+    }
+
+    .card-avatar-fallback.vacant-icon {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      color: #b45309;
+    }
+
+    .card-personal-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .card-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+    }
+
+    .card-name.vacant-name {
+      color: #b45309;
+      font-weight: 800;
+    }
+
+    .card-doc {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-subtle);
+      margin-top: 2px;
+    }
+
+    .vacant-pill {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #b45309;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      padding: 2px 7px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-corp-section {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      border-top: 1px dashed rgba(0, 30, 71, 0.1);
+      padding-top: 8px;
+      transition: all 0.35s ease;
+    }
+
+    .card-cargo {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-area {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-area svg {
+      width: 12px;
+      height: 12px;
+      stroke: var(--brand-teal);
+      flex-shrink: 0;
+    }
+
+    /* Botón de Expansión / Colapso en la base de la tarjeta */
+    .collapse-handle {
+      position: absolute;
+      bottom: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1.5px solid var(--brand-teal);
+      color: var(--brand-blue);
+      font-size: 0.75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 6px rgba(11, 37, 70, 0.15), -2px -2px 6px #ffffff;
+      cursor: pointer;
+      z-index: 5;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .collapse-handle:hover {
+      background: var(--brand-blue);
+      color: var(--brand-mint);
+      border-color: var(--brand-blue);
+      transform: translateX(-50%) scale(1.15);
+      box-shadow: 0 0 10px var(--lime-glow);
+    }
+
+    .collapse-handle.collapsed {
+      background: var(--brand-blue);
+      color: #ffffff;
+      border-color: var(--brand-blue);
+    }
+
+    .collapse-handle .sub-count {
+      font-size: 0.62rem;
+      font-weight: 800;
+    }
+
+    /* Modo Privacidad */
+    .privacy-active .org-card {
+      padding: 12px 14px;
+      width: 255px;
+    }
+
+    .privacy-active .card-personal-section {
+      max-height: 0 !important;
+      opacity: 0 !important;
+      margin-bottom: 0 !important;
+      padding: 0 !important;
+      pointer-events: none;
+    }
+
+    .privacy-active .card-corp-section {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    /* Efectos de Búsqueda */
+    .search-match {
+      box-shadow: 0 0 0 3px var(--brand-blue), 0 10px 30px rgba(31, 103, 246, 0.3) !important;
+      transform: translateY(-3px) scale(1.03);
+    }
+
+    .search-dimmed {
+      opacity: 0.28 !important;
+      filter: grayscale(60%);
+    }
+
+    /* ==========================================================================
+       6. VISTA TRANSVERSAL POR NIVELES
+       ========================================================================== */
+    .transversal-container {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+      padding: 30px 40px 80px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .transversal-container.visible {
+      display: flex;
+    }
+
+    .transversal-level-band {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: var(--nm-flat);
+    }
+
+    .band-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid rgba(35, 196, 196, 0.15);
+    }
+
+    .band-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .band-pill {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      box-shadow: 2px 2px 8px rgba(31, 103, 246, 0.25);
+    }
+
+    .band-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+    }
+
+    .band-stats {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .band-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+      gap: 16px;
+    }
+
+    .band-cards-grid .org-card {
+      position: relative;
+      width: 100%;
+      transform: none !important;
+    }
+
+    /* ==========================================================================
+       7. DOCK FLOTANTE DE ZOOM & NAVEGACIÓN (PUNTO 1: 100% Y AUTO/MANUAL)
+       ========================================================================== */
+    .zoom-dock {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: var(--radius-md);
+      padding: 6px;
+      box-shadow: var(--nm-flat);
+    }
+
+    .zoom-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(35, 196, 196, 0.2);
+      background: #ffffff;
+      box-shadow: var(--nm-btn);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--navy-dark);
+      transition: all 0.2s ease;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .zoom-btn:hover {
+      color: var(--brand-blue);
+      transform: scale(1.05);
+      box-shadow: var(--nm-hover);
+      border-color: var(--brand-blue);
+    }
+
+    .zoom-btn:active {
+      transform: scale(0.95);
+      box-shadow: var(--nm-btn-active);
+    }
+
+    .zoom-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.2;
+    }
+
+    .zoom-btn-pct {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--brand-blue);
+      padding: 2px;
+    }
+
+    .zoom-btn-mode.active-auto {
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      color: #ffffff;
+      border-color: transparent;
+    }
+
+    /* ==========================================================================
+       8. MODAL DETALLE DE COLABORADOR / VACANTE
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(11, 37, 70, 0.45);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-glass-card {
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 40px rgba(11, 37, 70, 0.2), var(--nm-flat);
+      padding: 26px;
+      position: relative;
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.active .modal-glass-card {
+      transform: translateY(0);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(11, 37, 70, 0.06);
+      color: var(--navy-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--brand-blue);
+      color: #ffffff;
+    }
+
+    .modal-profile-header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .modal-avatar-lg {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-mint));
+      box-shadow: 4px 4px 12px rgba(31, 103, 246, 0.2);
+      flex-shrink: 0;
+    }
+
+    .modal-avatar-lg img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #ffffff;
+    }
+
+    .modal-avatar-lg .fallback-lg {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      color: #ffffff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #ffffff;
+    }
+
+    .modal-avatar-lg .fallback-lg.vacant {
+      background: linear-gradient(135deg, var(--vacant-amber), #d97706);
+    }
+
+    .modal-title-data h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--navy-dark);
+      line-height: 1.25;
+    }
+
+    .modal-title-data .doc-tag {
+      font-size: 0.78rem;
+      color: var(--text-subtle);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .modal-grid-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .modal-info-box {
+      background: var(--bg-body);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--nm-inset);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .modal-info-box .field-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .modal-info-box .field-val {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      margin-top: 2px;
+    }
+
+    /* Modal de Instrucciones de Uso */
+    .instructions-card {
+      width: 100%;
+      max-width: 650px;
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 50px rgba(11, 37, 70, 0.25);
+      padding: 30px;
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .instructions-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1.5px solid #eef3f8;
+    }
+
+    .instructions-step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(31, 103, 246, 0.25);
+    }
+
+    .step-body h4 {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      margin-bottom: 4px;
+    }
+
+    .step-body p {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.48;
+    }
+
+    .step-body code {
+      background: rgba(31, 103, 246, 0.08);
+      color: var(--brand-blue);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    /* Drag and Drop Overlay */
+    .drag-drop-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(31, 103, 246, 0.88);
+      backdrop-filter: blur(14px);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .drag-drop-overlay.active {
+      display: flex;
+    }
+
+    .drag-drop-box {
+      background: #ffffff;
+      border: 3px dashed var(--brand-mint);
+      border-radius: 24px;
+      padding: 40px 60px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .drag-drop-icon {
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: rgba(40, 222, 182, 0.15);
+      color: var(--brand-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Toast */
+    .toast-notification {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--navy-dark);
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: var(--radius-full);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      z-index: 400;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .toast-notification.active {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast-notification svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--brand-mint);
+    }
+
+    /* Overlay de exportación PDF */
+    .export-loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 37, 70, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 500;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      gap: 16px;
+    }
+
+    .export-loading-overlay.active {
+      display: flex;
+    }
+
+    .luxury-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--brand-mint);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Template 16:9 para exportación */
+    #exportSlideContainer {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      background: #ffffff;
+      padding: 40px;
+      box-sizing: border-box;
+      flex-direction: column;
+      justify-content: space-between;
+      font-family: var(--font-primary);
+      z-index: 250;
+    }
+
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2.5px solid var(--brand-blue);
+      padding-bottom: 18px;
+    }
+
+    .slide-header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .slide-logo-img {
+      max-height: 60px;
+      max-width: 220px;
+      object-fit: contain;
+    }
+
+    .slide-badges {
+      display: flex;
+      gap: 10px;
+    }
+
+    .slide-badge-pill {
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      background: #edf4fc;
+      color: var(--navy-dark);
+    }
+
+    .slide-badge-pill.highlight {
+      background: var(--brand-blue);
+      color: #ffffff;
+    }
+
+    .slide-body-viewport {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1.5px solid #dbe4ef;
+      padding-top: 14px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Ocultar input de archivos */
+    #excelFileInput, #jsonFileInput, #logoFileInput {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .header-nav { padding: 10px 16px; }
+      .toolbar-actions { width: 100%; justify-content: flex-start; }
+      .search-box input { width: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       BARRA DE NAVEGACIÓN SUPERIOR (CON LOGO EMPRESARIAL Y CONTROLES)
+       ========================================================================== -->
+  <header class="header-nav">
+    <div class="brand-section">
+      <!-- Logo de la empresa en la esquina superior izquierda (Punto 4) -->
+      <div class="brand-logo-container" id="brandLogoContainer" title="Logo de la Empresa (Haz clic para cambiar)">
+        <img id="companyLogoImg" src="logo.png" alt="Logo de la Empresa" class="brand-logo-img">
+        <div id="companyLogoFallback" class="brand-logo-badge" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 2v6m0 0l-6 6m6-6l6 6M4 14h4v6H4v-6zm12 0h4v6h-4v-6zm-6 0h4v6h-4v-6z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <input type="file" id="logoFileInput" accept="image/*">
+
+      <div class="brand-info">
+        <h1>Apex Corp <span class="pro-pill">Executive Suite</span></h1>
+        <p>Visualizador Estructural & Transversal de Organigrama</p>
+      </div>
+    </div>
+
+    <!-- Barra de Herramientas Principal -->
+    <div class="toolbar-actions">
+      <!-- Inputs de Carga -->
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls">
+      <input type="file" id="jsonFileInput" accept=".json">
+
+      <!-- Botón Subir Excel -->
+      <button class="nm-btn nm-btn-primary" id="btnUploadExcel" title="Cargar archivo Excel con las 10 columnas oficiales">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Subir Excel</span>
+      </button>
+
+      <!-- Botón Descargar Plantilla Oficial (10 Columnas) -->
+      <button class="nm-btn" id="btnDownloadTemplate" title="Descargar plantilla Excel oficial pre-llenada con 10 columnas y cargos vacantes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Descargar Plantilla</span>
+      </button>
+
+      <!-- Botón Guardar JSON para Vercel / Git (Punto 5) -->
+      <button class="nm-btn" id="btnSaveJSON" title="Descargar organigrama.json para guardarlo en la carpeta /data del proyecto y subir a Vercel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        <span>Guardar JSON</span>
+      </button>
+
+      <!-- Botón Cargar JSON -->
+      <button class="nm-btn" id="btnUploadJSON" title="Cargar archivo .json previamente exportado">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        <span>Cargar JSON</span>
+      </button>
+
+      <!-- Botón Guía e Instrucciones -->
+      <button class="nm-btn" id="btnHelpInstructions" title="¿Cómo funciona la jerarquía, cargos vacantes y guardado?">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/>
+        </svg>
+        <span>Ayuda & Guía</span>
+      </button>
+
+      <!-- Toggle de Vista: Jerárquica vs Transversal -->
+      <div class="nm-toggle-group" title="Cambiar modo de visualización">
+        <button class="nm-toggle-btn active" id="btnViewHierarchy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 3v6m6-6v6m6-6v6M4 9h16M12 9v6m-8 6h4v-6H4v6zm12 0h4v-6h-4v6z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Jerárquica</span>
+        </button>
+        <button class="nm-toggle-btn" id="btnViewTransversal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Transversal</span>
+        </button>
+      </div>
+
+      <!-- Toggle de Privacidad -->
+      <div class="privacy-switch-wrap" id="btnTogglePrivacy" title="Ocultar foto, nombre y documento para reuniones confidenciales">
+        <div class="label-text">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15">
+            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Ocultar Datos</span>
+        </div>
+        <div class="switch-ui">
+          <div class="switch-handle"></div>
+        </div>
+      </div>
+
+      <!-- Botón Exportar PDF 16:9 -->
+      <button class="nm-btn nm-btn-accent" id="btnExportPDF" title="Exportar presentación PDF en proporción horizontal 16:9">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Exportar Presentación</span>
+      </button>
+
+      <!-- Buscador en tiempo real -->
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Buscar colaborador, cargo o vacante..." autocomplete="off">
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       FRANJA DE MÉTRICAS, ESTADO DE MEMORIA & ACCIONES RÁPIDAS
+       ========================================================================== -->
+  <aside class="metrics-bar">
+    <div class="metric-item">
+      <span class="metric-dot"></span>
+      <span>Colaboradores: <strong id="statTotalEmployees">0</strong></span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-dot lime"></span>
+      <span>Gerencias: <strong id="statTotalGerencias">0</strong></span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-dot"></span>
+      <span>Áreas: <strong id="statTotalAreas">0</strong></span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-dot lime"></span>
+      <span>Niveles: <strong id="statTotalNiveles">0</strong></span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-dot amber"></span>
+      <span>Vacantes: <strong id="statTotalVacantes">0</strong></span>
+    </div>
+
+    <!-- Indicador de Memoria y Persistencia (Punto 5) -->
+    <div class="memory-status-badge" id="memoryStatusBadge" title="Estado de almacenamiento local y en el proyecto">
+      <span class="metric-dot lime" id="memoryStatusDot"></span>
+      <span id="memoryStatusText">Memoria del proyecto</span>
+      <button class="btn-text-action" id="btnResetData" title="Restablecer datos originales del proyecto">Restablecer</button>
+    </div>
+
+    <!-- Acciones de Colapso Rápido (Punto 1) -->
+    <div class="metric-item" style="margin-left: auto; gap: 8px;">
+      <button class="nm-btn nm-btn-sm" id="btnCollapseAll" title="Contraer todos los niveles inferiores">
+        <span>− Colapsar Todo</span>
+      </button>
+      <button class="nm-btn nm-btn-sm" id="btnExpandAll" title="Expandir todo el organigrama">
+        <span>+ Expandir Todo</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==========================================================================
+       VIEWPORT DEL ORGANIGRAMA (D3 TREE)
+       ========================================================================== -->
+  <main class="chart-viewport" id="chartViewport">
+    <!-- Capa SVG para enlaces Bezier -->
+    <svg class="chart-svg" id="chartSvg">
+      <defs>
+        <linearGradient id="linkGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#1f67f6" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#23c4c4" stop-opacity="0.8"/>
+        </linearGradient>
+      </defs>
+      <g id="svgLinksGroup"></g>
+    </svg>
+
+    <!-- Capa HTML para tarjetas interactivas -->
+    <div class="chart-nodes-layer" id="chartNodesLayer"></div>
+
+    <!-- Contenedor para Vista Transversal por Niveles -->
+    <div class="transversal-container" id="transversalContainer"></div>
+  </main>
+
+  <!-- Dock Flotante de Zoom & Navegación (Punto 1) -->
+  <nav class="zoom-dock" aria-label="Controles de navegación">
+    <button class="zoom-btn" id="btnZoomIn" title="Acercar (+)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+
+    <!-- Botón 100% Zoom Rápido -->
+    <button class="zoom-btn zoom-btn-pct" id="btnZoom100" title="Restablecer zoom exactamente al 100% (1:1) centrado">
+      <span id="zoomLevelText">100%</span>
+    </button>
+
+    <button class="zoom-btn" id="btnZoomOut" title="Alejar (-)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+
+    <button class="zoom-btn" id="btnZoomFit" title="Ajustar árbol a la pantalla">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+      </svg>
+    </button>
+
+    <!-- Botón Modo Zoom: Manual vs Auto-ajustable -->
+    <button class="zoom-btn zoom-btn-mode" id="btnToggleZoomMode" title="Modo Zoom: Manual (Clic para activar Auto-Ajuste al expandir/colapsar)">
+      <span id="zoomModeIcon" style="font-size: 0.95rem;">🖐️</span>
+    </button>
+  </nav>
+
+  <!-- ==========================================================================
+       MODAL DETALLE DE COLABORADOR / VACANTE
+       ========================================================================== -->
+  <div class="modal-overlay" id="collaboratorModal">
+    <div class="modal-glass-card">
+      <button class="modal-close-btn" id="modalCloseBtn" aria-label="Cerrar ventana">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="modal-profile-header">
+        <div class="modal-avatar-lg" id="modalAvatarBox"></div>
+        <div class="modal-title-data">
+          <h2 id="modalCollabName">Nombre del Colaborador</h2>
+          <div class="doc-tag" id="modalCollabDoc">Documento: -</div>
+        </div>
+      </div>
+
+      <div class="modal-grid-info">
+        <div class="modal-info-box" style="grid-column: span 2;">
+          <div class="field-label">Cargo Actual / Posición</div>
+          <div class="field-val" id="modalCollabCargo">-</div>
+        </div>
+        <div class="modal-info-box">
+          <div class="field-label">Gerencia</div>
+          <div class="field-val" id="modalCollabGerencia">-</div>
+        </div>
+        <div class="modal-info-box">
+          <div class="field-label">Área Operativa</div>
+          <div class="field-val" id="modalCollabArea">-</div>
+        </div>
+        <div class="modal-info-box">
+          <div class="field-label">Nivel Estratégico</div>
+          <div class="field-val" id="modalCollabNivel">-</div>
+        </div>
+        <div class="modal-info-box">
+          <div class="field-label">Equipo a Cargo</div>
+          <div class="field-val" id="modalCollabReports">-</div>
+        </div>
+        <div class="modal-info-box" style="grid-column: span 2;">
+          <div class="field-label">Líder Directo a Quien Reporta</div>
+          <div class="field-val" id="modalCollabBoss">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Guía e Instrucciones -->
+  <div class="modal-overlay" id="instructionsModal">
+    <div class="instructions-card">
+      <button class="modal-close-btn" id="instructionsCloseBtn" aria-label="Cerrar instrucciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="instructions-header">
+        <div class="brand-logo-badge" style="width: 44px; height: 44px; flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="22" height="22">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--navy-dark); letter-spacing: -0.02em;">Guía de Carga, Vacantes y Despliegue en Vercel</h2>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Todo lo necesario para gestionar tu organigrama profesional</p>
+        </div>
+      </div>
+
+      <div class="instructions-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Estructura de las 10 Columnas Oficiales</h4>
+          <p>Usa el botón <strong>"Descargar Plantilla"</strong> para obtener el archivo Excel con las 10 columnas en el orden exacto:</p>
+          <p style="margin-top: 4px; font-size: 0.8rem; line-height: 1.6;">
+            <code>1. Documento</code> • <code>2. Nombre</code> • <code>3. Foto del Colaborador</code> • <code>4. Cargo</code> • <code>5. Área</code> • <code>6. Gerencia</code> • <code>7. Nivel</code> • <code>8. Reporta A</code> • <strong><code>9. Nombre a Quien Reporta</code></strong> • <strong><code>10. Cargo a quien reporta</code></strong>
+          </p>
+        </div>
+      </div>
+
+      <div class="instructions-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Manejo Inteligente de Cargos Vacantes o Renuncias</h4>
+          <p>• <strong>Si un cargo está vacante:</strong> Escribe <code>Vacante</code> en la columna <code>Nombre</code>. El sistema lo resaltará con borde punteado dorado y distintivo de convocatoria.</p>
+          <p style="margin-top: 4px;">• <strong>Si una persona le reporta a un cargo vacante:</strong> En <code>Nombre a Quien Reporta</code> escribe <code>Vacante</code> y en <code>Cargo a quien reporta</code> escribe el título del cargo. El sistema <strong>asociará automáticamente a los colaboradores con ese cargo y área</strong>, garantizando que nadie quede huérfano.</p>
+        </div>
+      </div>
+
+      <div class="instructions-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Zoom Inicial al 100% y Control de Colapso</h4>
+          <p>• El organigrama siempre inicia <strong>contraído y con zoom al 100%</strong> centrado en el líder superior para máxima claridad.</p>
+          <p style="margin-top: 4px;">• Con el botón <strong>🖐️ Manual / 🎯 Auto</strong> en el dock de zoom puedes elegir si al expandir o colapsar equipos la pantalla se re-ajusta automáticamente o conserva tu nivel de zoom manual.</p>
+        </div>
+      </div>
+
+      <div class="instructions-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Logo de tu Empresa & Personalización</h4>
+          <p>Deja el archivo de imagen de tu logo en la carpeta raíz del proyecto con el nombre <code>logo.png</code> (o <code>logo.svg</code> / <code>logo.jpg</code>). Se mostrará automáticamente en la esquina superior izquierda y en las diapositivas PDF. También puedes hacer clic sobre el logo para probar una imagen al instante.</p>
+        </div>
+      </div>
+
+      <div class="instructions-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Memoria Persistente y Despliegue en Git / Vercel</h4>
+          <p>• <strong>Memoria en tu navegador:</strong> Cada vez que subas un Excel, se guarda automáticamente en <code>localStorage</code>.</p>
+          <p style="margin-top: 4px;">• <strong>Para Vercel y toda la empresa:</strong> Haz clic en <strong>"Guardar JSON"</strong>, coloca el archivo descargado en la carpeta <code>data/organigrama.json</code> y súbelo a Git. ¡Vercel lo mostrará automáticamente a cualquier persona que ingrese!</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; text-align: right;">
+        <button class="nm-btn nm-btn-primary" id="btnInstructionsOk" style="padding: 10px 26px; font-weight: 700;">¡Entendido, Comenzar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay Drag & Drop -->
+  <div class="drag-drop-overlay" id="dragDropOverlay">
+    <div class="drag-drop-box">
+      <div class="drag-drop-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="38" height="38">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--navy-dark); margin-bottom: 6px;">¡Suelta tu archivo Excel aquí!</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Soporta .xlsx y .xls con las 10 columnas y vacantes.</p>
+    </div>
+  </div>
+
+  <!-- Template Oculto para Exportación a PDF 16:9 -->
+  <div id="exportSlideContainer">
+    <div class="slide-header">
+      <div class="slide-header-left">
+        <img id="slideCompanyLogo" src="logo.png" alt="Logo de la Empresa" class="slide-logo-img" onerror="this.style.display='none';">
+        <div class="slide-title-block">
+          <h1 id="slideHeaderTitle" style="font-size: 1.4rem; font-weight: 800; color: var(--navy-dark);">ORGANIGRAMA CORPORATIVO EJECUTIVO</h1>
+          <p id="slideHeaderSubtitle" style="font-size: 0.88rem; color: var(--text-muted); margin-top: 3px;">Estructura Organizacional Dinámica y Transversal</p>
+        </div>
+      </div>
+      <div class="slide-badges">
+        <div class="slide-badge-pill highlight" id="slideBadgeViewMode">Vista Jerárquica</div>
+        <div class="slide-badge-pill" id="slideBadgePrivacy">Datos Completos</div>
+        <div class="slide-badge-pill" id="slideBadgeDate">Fecha</div>
+      </div>
+    </div>
+
+    <div class="slide-body-viewport" id="slideBodyViewport"></div>
+
+    <div class="slide-footer">
+      <span>Documento Confidencial de Uso Interno Corporativo</span>
+      <span>Executive Suite • Proyección 16:9 de Alta Definición</span>
+    </div>
+  </div>
+
+  <!-- Toast de Notificaciones -->
+  <div class="toast-notification" id="toastMessage">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="22 4 12 14.01 9 11.01" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span id="toastText">Operación realizada con éxito</span>
+  </div>
+
+  <!-- Overlay de Procesamiento al Exportar -->
+  <div class="export-loading-overlay" id="exportLoadingOverlay">
+    <div class="luxury-spinner"></div>
+    <div style="font-size: 1.15rem; font-weight: 700;">Generando Slide de Presentación en Alta Resolución...</div>
+    <div style="font-size: 0.85rem; color: #bed5eb;">Optimizando proporción horizontal 16:9</div>
+  </div>
+
+  <!-- ==========================================================================
+       LÓGICA JAVASCRIPT: DATASTORE, EXCEL, HIERARCHY ENGINE, D3 & EXPORTADOR
+       ========================================================================== -->
+  <script>
+    /**
+     * ============================================================================
+     * MÓDULO 1: ESTADO GLOBAL DE LA APLICACIÓN Y DATASET DE PRUEBA OFICIAL
+     * ============================================================================
+     */
+    const AppState = {
+      rawEmployees: [],         // Colaboradores normalizados con 10 columnas
+      hierarchyTree: null,      // Estructura en árbol D3
+      currentView: 'hierarchy', // 'hierarchy' | 'transversal'
+      isPrivacyActive: false,   // true = oculta foto, nombre y documento
+      zoomTransform: d3.zoomIdentity,
+      activeSearchTerm: '',
+      collapsedNodeIds: new Set(),
+      autoFitOnToggle: false    // false = Zoom manual (Punto 1); true = Auto-ajustar al colapsar/expandir
+    };
+
+    /**
+     * Dataset de prueba predeterminado con las 10 columnas y demostración de VACANTE
+     */
+    const INITIAL_SAMPLE_DATA = [
+      {
+        documento: "1001001",
+        nombre: "Valeria Mendoza Cruz",
+        foto: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+        cargo: "Chief Executive Officer (CEO)",
+        area: "Alta Dirección",
+        gerencia: "Gerencia General",
+        nivel: "Nivel 1 - Estratégico",
+        reportaA: "",
+        nombreReporta: "",
+        cargoReporta: ""
+      },
+      {
+        documento: "1002001",
+        nombre: "Ing. Carlos Benítez Vargas",
+        foto: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80",
+        cargo: "Gerente de Tecnología & CTO",
+        area: "Tecnología e Innovación",
+        gerencia: "Gerencia de Tecnología",
+        nivel: "Nivel 2 - Táctico / Gerencial",
+        reportaA: "1001001",
+        nombreReporta: "Valeria Mendoza Cruz",
+        cargoReporta: "Chief Executive Officer (CEO)"
+      },
+      {
+        documento: "1002002",
+        nombre: "Sofía Herrera Paz",
+        foto: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80",
+        cargo: "Líder de Arquitectura Cloud & DevOps",
+        area: "Infraestructura Cloud",
+        gerencia: "Gerencia de Tecnología",
+        nivel: "Nivel 3 - Jefatura / Líder",
+        reportaA: "1002001",
+        nombreReporta: "Ing. Carlos Benítez Vargas",
+        cargoReporta: "Gerente de Tecnología & CTO"
+      },
+      {
+        documento: "1002003",
+        nombre: "Mateo Morales Peña",
+        foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+        cargo: "Senior DevOps & Cloud Engineer",
+        area: "Infraestructura Cloud",
+        gerencia: "Gerencia de Tecnología",
+        nivel: "Nivel 4 - Especialista",
+        reportaA: "1002002",
+        nombreReporta: "Sofía Herrera Paz",
+        cargoReporta: "Líder de Arquitectura Cloud & DevOps"
+      },
+      {
+        documento: "1002004",
+        nombre: "Lucía Castillo Rivera",
+        foto: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&auto=format&fit=crop&q=80",
+        cargo: "Lead Frontend Architect",
+        area: "Desarrollo de Software",
+        gerencia: "Gerencia de Tecnología",
+        nivel: "Nivel 3 - Jefatura / Líder",
+        reportaA: "1002001",
+        nombreReporta: "Ing. Carlos Benítez Vargas",
+        cargoReporta: "Gerente de Tecnología & CTO"
+      },
+      {
+        documento: "1002005",
+        nombre: "Diego Salazar Ortiz",
+        foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+        cargo: "Especialista Frontend & UI/UX",
+        area: "Desarrollo de Software",
+        gerencia: "Gerencia de Tecnología",
+        nivel: "Nivel 4 - Especialista",
+        reportaA: "1002004",
+        nombreReporta: "Lucía Castillo Rivera",
+        cargoReporta: "Lead Frontend Architect"
+      },
+      {
+        documento: "1003001",
+        nombre: "Dr. Roberto Navarro Silva",
+        foto: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80",
+        cargo: "Chief Financial Officer (CFO)",
+        area: "Finanzas Corporativas",
+        gerencia: "Gerencia Financiera",
+        nivel: "Nivel 2 - Táctico / Gerencial",
+        reportaA: "1001001",
+        nombreReporta: "Valeria Mendoza Cruz",
+        cargoReporta: "Chief Executive Officer (CEO)"
+      },
+      {
+        documento: "1003002",
+        nombre: "Mariana Gómez Alarcón",
+        foto: "https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?w=400&auto=format&fit=crop&q=80",
+        cargo: "Jefa de Auditoría & Contabilidad",
+        area: "Contabilidad y Tributación",
+        gerencia: "Gerencia Financiera",
+        nivel: "Nivel 3 - Jefatura / Líder",
+        reportaA: "1003001",
+        nombreReporta: "Dr. Roberto Navarro Silva",
+        cargoReporta: "Chief Financial Officer (CFO)"
+      },
+      {
+        documento: "1003003",
+        nombre: "Javier Rojas Cárdenas",
+        foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80",
+        cargo: "Analista Senior de Planeación Financiera",
+        area: "Planeación Financiera",
+        gerencia: "Gerencia Financiera",
+        nivel: "Nivel 4 - Especialista",
+        reportaA: "1003001",
+        nombreReporta: "Dr. Roberto Navarro Silva",
+        cargoReporta: "Chief Financial Officer (CFO)"
+      },
+      {
+        documento: "1004001",
+        nombre: "Alejandro Restrepo Duque",
+        foto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80",
+        cargo: "Chief Commercial Officer (CCO)",
+        area: "Estrategia Comercial",
+        gerencia: "Gerencia Comercial",
+        nivel: "Nivel 2 - Táctico / Gerencial",
+        reportaA: "1001001",
+        nombreReporta: "Valeria Mendoza Cruz",
+        cargoReporta: "Chief Executive Officer (CEO)"
+      },
+      {
+        documento: "1004002",
+        nombre: "Camila Quintero Beltrán",
+        foto: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
+        cargo: "Directora de Cuentas Corporativas Enterprise",
+        area: "Ventas Enterprise B2B",
+        gerencia: "Gerencia Comercial",
+        nivel: "Nivel 3 - Jefatura / Líder",
+        reportaA: "1004001",
+        nombreReporta: "Alejandro Restrepo Duque",
+        cargoReporta: "Chief Commercial Officer (CCO)"
+      },
+      {
+        documento: "1004003",
+        nombre: "Andrés Paredes Meza",
+        foto: "",
+        cargo: "Key Account Manager Senior",
+        area: "Ventas Enterprise B2B",
+        gerencia: "Gerencia Comercial",
+        nivel: "Nivel 4 - Especialista",
+        reportaA: "1004002",
+        nombreReporta: "Camila Quintero Beltrán",
+        cargoReporta: "Directora de Cuentas Corporativas Enterprise"
+      },
+      {
+        documento: "1004004",
+        nombre: "Valentina Silva Rincón",
+        foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+        cargo: "Líder de Growth Marketing & Marca",
+        area: "Marketing Digital & Growth",
+        gerencia: "Gerencia Comercial",
+        nivel: "Nivel 3 - Jefatura / Líder",
+        reportaA: "1004001",
+        nombreReporta: "Alejandro Restrepo Duque",
+        cargoReporta: "Chief Commercial Officer (CCO)"
+      },
+      {
+        documento: "1005001",
+        nombre: "Daniela Ordoñez Maya",
+        foto: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&auto=format&fit=crop&q=80",
+        cargo: "Gerente de People & Culture",
+        area: "Talento Humano",
+        gerencia: "Gerencia de Talento Humano",
+        nivel: "Nivel 2 - Táctico / Gerencial",
+        reportaA: "1001001",
+        nombreReporta: "Valeria Mendoza Cruz",
+        cargoReporta: "Chief Executive Officer (CEO)"
+      },
+      {
+        documento: "1005002",
+        nombre: "Felipe Cárdenas León",
+        foto: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80",
+        cargo: "Especialista de Atracción Tech & Bienestar",
+        area: "Desarrollo Organizacional",
+        gerencia: "Gerencia de Talento Humano",
+        nivel: "Nivel 4 - Especialista",
+        reportaA: "1005001",
+        nombreReporta: "Daniela Ordoñez Maya",
+        cargoReporta: "Gerente de People & Culture"
+      },
+      // Demostración Oficial de Cargos Vacantes (Puntos 2 y 3)
+      {
+        documento: "VAC-1006000",
+        nombre: "Vacante",
+        foto: "",
+        cargo: "Gerente de Operaciones & Supply Chain",
+        area: "Operaciones Estratégicas",
+        gerencia: "Gerencia de Operaciones",
+        nivel: "Nivel 2 - Táctico / Gerencial",
+        reportaA: "1001001",
+        nombreReporta: "Valeria Mendoza Cruz",
+        cargoReporta: "Chief Executive Officer (CEO)"
+      },
+      {
+        documento: "1006001",
+        nombre: "Marcos Villanueva Paz",
+        foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+        cargo: "Coordinador de Cadena de Suministro",
+        area: "Operaciones Estratégicas",
+        gerencia: "Gerencia de Operaciones",
+        nivel: "Nivel 3 - Jefatura / Líder",
+        reportaA: "",
+        nombreReporta: "Vacante",
+        cargoReporta: "Gerente de Operaciones & Supply Chain"
+      },
+      {
+        documento: "1006002",
+        nombre: "Camila Estrada Ríos",
+        foto: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&auto=format&fit=crop&q=80",
+        cargo: "Analista Senior de Comercio Exterior & Aduanas",
+        area: "Operaciones Estratégicas",
+        gerencia: "Gerencia de Operaciones",
+        nivel: "Nivel 4 - Especialista",
+        reportaA: "1006001",
+        nombreReporta: "Marcos Villanueva Paz",
+        cargoReporta: "Coordinador de Cadena de Suministro"
+      }
+    ];
+
+    /**
+     * ============================================================================
+     * MÓDULO 2: GESTIÓN DE PERSISTENCIA & MEMORIA LOCAL/PROYECTO (PUNTO 5)
+     * ============================================================================
+     */
+    const StorageService = {
+      STORAGE_KEY: "organigrama_saved_data_v2",
+      STORAGE_META_KEY: "organigrama_saved_meta_v2",
+
+      save(data, sourceName = "Archivo importado") {
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+          const meta = {
+            sourceName,
+            timestamp: new Date().toISOString(),
+            count: data.length
+          };
+          localStorage.setItem(this.STORAGE_META_KEY, JSON.stringify(meta));
+          this.updateStatusBadge();
+        } catch (e) {
+          console.warn("No se pudo escribir en localStorage:", e);
+        }
+      },
+
+      load() {
+        try {
+          const saved = localStorage.getItem(this.STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed;
+            }
+          }
+        } catch (e) {
+          console.error("Error al leer datos locales:", e);
+        }
+        return null;
+      },
+
+      async loadPreloadedJSON() {
+        try {
+          const res = await fetch("./data/organigrama.json?t=" + Date.now());
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              return data;
+            }
+          }
+        } catch (e) {
+          console.info("Archivo ./data/organigrama.json no cargado directamente por fetch (entorno file:// o CORS):", e);
+        }
+        return null;
+      },
+
+      clear() {
+        try {
+          localStorage.removeItem(this.STORAGE_KEY);
+          localStorage.removeItem(this.STORAGE_META_KEY);
+          this.updateStatusBadge();
+        } catch (e) {}
+      },
+
+      downloadJSON(data) {
+        const filename = "organigrama.json";
+        const jsonStr = JSON.stringify(data, null, 2);
+        downloadFile(jsonStr, filename, "application/json");
+        showToast("organigrama.json descargado. Guárdalo en /data para actualizar en Vercel.");
+      },
+
+      updateStatusBadge() {
+        const badgeText = document.getElementById("memoryStatusText");
+        const badgeDot = document.getElementById("memoryStatusDot");
+        if (!badgeText) return;
+
+        try {
+          const metaStr = localStorage.getItem(this.STORAGE_META_KEY);
+          if (metaStr) {
+            const meta = JSON.parse(metaStr);
+            badgeText.textContent = `Memoria activa (${meta.count} personas)`;
+            if (badgeDot) badgeDot.className = "metric-dot lime";
+            return;
+          }
+        } catch (e) {}
+
+        badgeText.textContent = "Datos del proyecto";
+        if (badgeDot) badgeDot.className = "metric-dot";
+      }
+    };
+
+    /**
+     * ============================================================================
+     * MÓDULO 3: GESTIÓN DEL LOGO EMPRESARIAL (PUNTO 4)
+     * ============================================================================
+     */
+    const LogoService = {
+      LOGO_STORAGE_KEY: "organigrama_custom_logo_v2",
+
+      init() {
+        const logoImg = document.getElementById("companyLogoImg");
+        const logoFallback = document.getElementById("companyLogoFallback");
+        const slideLogo = document.getElementById("slideCompanyLogo");
+        const logoInput = document.getElementById("logoFileInput");
+        const logoContainer = document.getElementById("brandLogoContainer");
+
+        // 1. Revisar si hay un logo guardado en memoria por el usuario
+        const savedLogo = localStorage.getItem(this.LOGO_STORAGE_KEY);
+        if (savedLogo) {
+          if (logoImg) logoImg.src = savedLogo;
+          if (slideLogo) slideLogo.src = savedLogo;
+          return;
+        }
+
+        // 2. Intentar cadena de formatos automáticos: logo.png -> logo.svg -> logo.jpg -> fallback
+        if (logoImg) {
+          logoImg.onerror = function() {
+            if (!this._triedSvg) {
+              this._triedSvg = true;
+              this.src = "logo.svg";
+              if (slideLogo) slideLogo.src = "logo.svg";
+            } else if (!this._triedJpg) {
+              this._triedJpg = true;
+              this.src = "logo.jpg";
+              if (slideLogo) slideLogo.src = "logo.jpg";
+            } else {
+              this.style.display = "none";
+              if (logoFallback) logoFallback.style.display = "flex";
+              if (slideLogo) slideLogo.style.display = "none";
+            }
+          };
+        }
+
+        // 3. Permitir cambiar logo haciendo clic en la imagen
+        if (logoContainer && logoInput) {
+          logoContainer.addEventListener("click", () => logoInput.click());
+
+          logoInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const dataUrl = ev.target.result;
+              try {
+                localStorage.setItem(LogoService.LOGO_STORAGE_KEY, dataUrl);
+              } catch (err) {}
+              if (logoImg) {
+                logoImg.src = dataUrl;
+                logoImg.style.display = "block";
+              }
+              if (slideLogo) {
+                slideLogo.src = dataUrl;
+                slideLogo.style.display = "block";
+              }
+              if (logoFallback) logoFallback.style.display = "none";
+              showToast("Logo de empresa actualizado exitosamente");
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+    };
+
+    /**
+     * ============================================================================
+     * MÓDULO 4: PARSEO Y GESTIÓN DE EXCEL CON SHEETJS (PUNTO 2: 10 COLUMNAS)
+     * ============================================================================
+     */
+    const ExcelService = {
+      async parseUploadedFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: 'array' });
+              
+              if (!workbook.SheetNames.length) {
+                throw new Error("El archivo Excel no contiene hojas de cálculo.");
+              }
+
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+              const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+              
+              if (!rawRows || rawRows.length === 0) {
+                throw new Error("La primera hoja del archivo está vacía.");
+              }
+
+              const normalizedData = ExcelService.normalizeRows(rawRows);
+              resolve(normalizedData);
+            } catch (err) {
+              reject(err);
+            }
+          };
+          reader.onerror = () => reject(new Error("Error al leer el archivo desde el disco."));
+          reader.readAsArrayBuffer(file);
+        });
+      },
+
+      /**
+       * Normalización de las 10 columnas oficiales:
+       * 1. Documento
+       * 2. Nombre
+       * 3. Foto del Colaborador
+       * 4. Cargo
+       * 5. Área
+       * 6. Gerencia
+       * 7. Nivel
+       * 8. Reporta A
+       * 9. Nombre a Quien Reporta (Nuevo - Punto 2)
+       * 10. Cargo a quien reporta (Nuevo - Punto 2)
+       */
+      normalizeRows(rows) {
+        return rows.map((row, index) => {
+          const keys = Object.keys(row);
+          
+          const findVal = (regex) => {
+            const key = keys.find(k => regex.test(k.trim().toLowerCase()));
+            return key ? String(row[key]).trim() : "";
+          };
+
+          const documento = findVal(/^(documento|doc|cedula|cdula|identificacion|identificacin|dni|id)$/i) || `EMP-${index + 1000}`;
+          const nombre = findVal(/^(nombre|colaborador|empleado|full\s*name)$/i) || "Colaborador Sin Nombre";
+          const rawFoto = findVal(/^(foto|foto\s*del\s*colaborador|imagen|url|avatar|picture|foto\s*drive|drive)$/i);
+          const foto = formatPhotoUrl(rawFoto);
+          const cargo = findVal(/^(cargo|posicion|posicin|puesto|rol|job\s*title)$/i) || "Cargo Asignado";
+          const area = findVal(/^(area|rea|departamento|unidad)$/i) || "Operaciones Generales";
+          const gerencia = findVal(/^(gerencia|division|divisin)$/i) || "Gerencia General";
+          const nivel = findVal(/^(nivel|level|peso|rango)$/i) || "Nivel 3 - Operativo";
+          const reportaA = findVal(/^(reporta|reporta\s*a|documento\s*jefe|id\s*jefe|superior\s*doc)$/i);
+
+          // Nuevas Columnas solicitadas (Punto 2)
+          const nombreReporta = findVal(/^(nombre\s*a\s*quien\s*reporta|nombre\s*jefe|jefe\s*nombre|reporta\s*a\s*nombre|superior\s*nombre|quien\s*reporta\s*nombre)$/i);
+          const cargoReporta = findVal(/^(cargo\s*a\s*quien\s*reporta|cargo\s*jefe|jefe\s*cargo|reporta\s*a\s*cargo|superior\s*cargo|cargo\s*reporta|quien\s*reporta\s*cargo)$/i);
+
+          const isVacant = /^(vacante|posici[oó]n\s*vacante|disponible|sin\s*asignar)$/i.test(nombre.trim());
+
+          return {
+            documento,
+            nombre: isVacant ? "Vacante" : nombre,
+            foto: isVacant ? "" : foto,
+            cargo,
+            area,
+            gerencia,
+            nivel,
+            reportaA,
+            nombreReporta,
+            cargoReporta,
+            isVacant
+          };
+        });
+      },
+
+      /**
+       * Genera y descarga la plantilla Excel oficial de 10 columnas
+       */
+      downloadTemplate() {
+        const templateHeaders = [
+          "Documento",
+          "Nombre",
+          "Foto del Colaborador",
+          "Cargo",
+          "Área",
+          "Gerencia",
+          "Nivel",
+          "Reporta A",
+          "Nombre a Quien Reporta",
+          "Cargo a quien reporta"
+        ];
+
+        const templateData = INITIAL_SAMPLE_DATA.map(emp => ({
+          "Documento": emp.documento,
+          "Nombre": emp.nombre,
+          "Foto del Colaborador": emp.foto,
+          "Cargo": emp.cargo,
+          "Área": emp.area,
+          "Gerencia": emp.gerencia,
+          "Nivel": emp.nivel,
+          "Reporta A": emp.reportaA,
+          "Nombre a Quien Reporta": emp.nombreReporta,
+          "Cargo a quien reporta": emp.cargoReporta
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(templateData, { header: templateHeaders });
+        
+        worksheet['!cols'] = [
+          { wch: 14 }, // Documento
+          { wch: 28 }, // Nombre
+          { wch: 45 }, // Foto URL
+          { wch: 34 }, // Cargo
+          { wch: 26 }, // Área
+          { wch: 26 }, // Gerencia
+          { wch: 24 }, // Nivel
+          { wch: 14 }, // Reporta A
+          { wch: 28 }, // Nombre a Quien Reporta (Nuevo)
+          { wch: 34 }  // Cargo a quien reporta (Nuevo)
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Organigrama");
+
+        const filename = "Plantilla_Organigrama_Corporativo_10_Columnas.xlsx";
+
+        try {
+          XLSX.writeFile(workbook, filename);
+        } catch (err) {
+          const b64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+          const link = document.createElement("a");
+          link.href = "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + b64;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          setTimeout(() => document.body.removeChild(link), 1500);
+        }
+
+        showToast("Plantilla oficial descargada con las 10 columnas y vacantes");
+      }
+    };
+
+    /**
+     * ============================================================================
+     * MÓDULO 5: MOTOR DE JERARQUÍA & RELACIÓN POR CARGOS/ÁREAS (PUNTOS 2 Y 3)
+     * ============================================================================
+     * Si el campo dice vacante o si la persona renunció, relaciona automáticamente
+     * con los cargos y las áreas correspondientes para mantener el árbol 100% íntegro.
+     */
+    const HierarchyEngine = {
+      buildTree(employees) {
+        if (!employees || employees.length === 0) return null;
+
+        // Copia profunda y marcado de vacante
+        const list = employees.map(emp => {
+          const isVacant = Boolean(emp.isVacant || /^(vacante|posici[oó]n\s*vacante|disponible|sin\s*asignar)$/i.test((emp.nombre || "").trim()));
+          return {
+            ...emp,
+            isVacant,
+            children: [],
+            _hasParent: false
+          };
+        });
+
+        const docMap = new Map();
+        const nameMap = new Map();
+        const cargoMap = new Map();
+
+        list.forEach(item => {
+          if (item.documento) docMap.set(String(item.documento).trim(), item);
+          if (item.nombre && !item.isVacant) {
+            nameMap.set(normalizeStr(item.nombre), item);
+          }
+          if (item.cargo) {
+            const cKey = normalizeStr(item.cargo);
+            if (!cargoMap.has(cKey)) cargoMap.set(cKey, []);
+            cargoMap.get(cKey).push(item);
+          }
+        });
+
+        // Función para resolver jefe por Cargo y Área (Punto 3)
+        const findBossByCargoAndArea = (targetCargo, targetArea, targetGerencia) => {
+          const normCargo = normalizeStr(targetCargo);
+          if (!normCargo) return null;
+
+          const candidates = list.filter(c => normalizeStr(c.cargo) === normCargo);
+          if (candidates.length === 0) return null;
+          if (candidates.length === 1) return candidates[0];
+
+          // Desempate por Área y Gerencia
+          const normArea = normalizeStr(targetArea);
+          const normGer = normalizeStr(targetGerencia);
+
+          const exactAreaAndGer = candidates.find(c => normalizeStr(c.area) === normArea && normalizeStr(c.gerencia) === normGer);
+          if (exactAreaAndGer) return exactAreaAndGer;
+
+          const exactArea = candidates.find(c => normalizeStr(c.area) === normArea);
+          if (exactArea) return exactArea;
+
+          const exactGer = candidates.find(c => normalizeStr(c.gerencia) === normGer);
+          if (exactGer) return exactGer;
+
+          return candidates[0];
+        };
+
+        // 1. Vincular subordinados con líderes
+        list.forEach(node => {
+          let boss = null;
+
+          // Prioridad A: Por documento (Reporta A)
+          if (node.reportaA && docMap.has(String(node.reportaA).trim())) {
+            const candidate = docMap.get(String(node.reportaA).trim());
+            if (candidate !== node) boss = candidate;
+          }
+
+          // Prioridad B: Por Nombre a Quien Reporta (si no dice 'Vacante')
+          if (!boss && node.nombreReporta) {
+            const isReportVacant = /^(vacante|posici[oó]n\s*vacante|sin\s*asignar)$/i.test(node.nombreReporta.trim());
+            if (!isReportVacant) {
+              const candidate = nameMap.get(normalizeStr(node.nombreReporta));
+              if (candidate && candidate !== node) boss = candidate;
+            }
+          }
+
+          // Prioridad C: Por Cargo a Quien Reporta y Área (Puntos 2 y 3)
+          // Se activa cuando dice 'Vacante', o si renunció, o si no se especificó documento/nombre
+          if (!boss && node.cargoReporta) {
+            boss = findBossByCargoAndArea(node.cargoReporta, node.area, node.gerencia);
+
+            // Si el cargo de jefe no existe en el listado (renunció y borraron su fila):
+            // Creamos automáticamente el nodo vacante para ese cargo y área
+            if (!boss) {
+              const dynamicDoc = `VAC-${cleanId(node.cargoReporta)}-${cleanId(node.area)}`;
+              boss = {
+                documento: dynamicDoc,
+                nombre: "Vacante",
+                foto: "",
+                cargo: node.cargoReporta,
+                area: node.area,
+                gerencia: node.gerencia,
+                nivel: "Nivel 2 - Táctico / Gerencial",
+                reportaA: "",
+                nombreReporta: "",
+                cargoReporta: "",
+                isVacant: true,
+                isDynamicVacant: true,
+                children: [],
+                _hasParent: false
+              };
+              docMap.set(dynamicDoc, boss);
+              list.push(boss);
+            }
+          }
+
+          if (boss && boss !== node) {
+            boss.children.push(node);
+            node._hasParent = true;
+          }
+        });
+
+        // 2. Localizar nodo raíz principal (CEO / Alta Dirección)
+        const roots = list.filter(n => !n._hasParent);
+
+        if (roots.length === 0) return list[0];
+
+        const ceoIndex = roots.findIndex(n => 
+          /nivel\s*1/i.test(n.nivel) || 
+          /ceo|presidente|director\s*general|gerente\s*general/i.test(n.cargo)
+        );
+
+        const mainRoot = ceoIndex >= 0 ? roots[ceoIndex] : roots[0];
+
+        // Vincular huérfanos o raíces secundarias bajo el root principal
+        roots.forEach(orphan => {
+          if (orphan !== mainRoot) {
+            mainRoot.children.push(orphan);
+            orphan._hasParent = true;
+          }
+        });
+
+        return mainRoot;
+      }
+    };
+
+    /**
+     * ============================================================================
+     * MÓDULO 6: RENDERIZADOR D3 & ZOOM INTELIGENTE (PUNTO 1)
+     * ============================================================================
+     */
+    const OrgChartRenderer = {
+      zoomBehavior: null,
+      d3Root: null,
+
+      init() {
+        const viewport = d3.select("#chartViewport");
+        const svg = d3.select("#chartSvg");
+        const nodesLayer = d3.select("#chartNodesLayer");
+
+        this.zoomBehavior = d3.zoom()
+          .scaleExtent([0.15, 2.8])
+          .on("zoom", (event) => {
+            AppState.zoomTransform = event.transform;
+            svg.select("#svgLinksGroup").attr("transform", event.transform);
+            nodesLayer.style("transform", `translate(${event.transform.x}px, ${event.transform.y}px) scale(${event.transform.k})`);
+            
+            const zoomPct = Math.round(event.transform.k * 100);
+            const levelText = document.getElementById("zoomLevelText");
+            if (levelText) levelText.textContent = `${zoomPct}%`;
+          });
+
+        viewport.call(this.zoomBehavior).on("dblclick.zoom", null);
+      },
+
+      /**
+       * Contrae todo el árbol al estado inicial (Punto 1):
+       * El líder superior/CEO queda visible, pero todos los líderes de su equipo
+       * quedan colapsados con sus contadores +N de personas a cargo.
+       */
+      collapseToInitialState() {
+        AppState.collapsedNodeIds.clear();
+        if (!this.d3Root) return;
+
+        this.d3Root.each(d => {
+          if (d.depth >= 1 && d.data.children && d.data.children.length > 0) {
+            AppState.collapsedNodeIds.add(d.data.documento);
+          }
+        });
+      },
+
+      /**
+       * Colapsa absolutamente todos los nodos con subordinados
+       */
+      collapseAll() {
+        AppState.collapsedNodeIds.clear();
+        if (!this.d3Root) return;
+        this.d3Root.each(d => {
+          if (d.data.children && d.data.children.length > 0) {
+            AppState.collapsedNodeIds.add(d.data.documento);
+          }
+        });
+        this.renderHierarchyTree();
+        showToast("Organigrama completamente contraído");
+      },
+
+      /**
+       * Expande toda la organización
+       */
+      expandAll() {
+        AppState.collapsedNodeIds.clear();
+        this.renderHierarchyTree();
+        if (AppState.autoFitOnToggle) {
+          this.fitToScreen();
+        }
+        showToast("Toda la organización expandida");
+      },
+
+      /**
+       * Fija el zoom exactamente al 100% (1:1) centrado horizontalmente (Punto 1)
+       */
+      setZoom100() {
+        const viewport = document.getElementById("chartViewport");
+        if (!viewport || !this.d3Root) return;
+
+        const width = viewport.clientWidth || window.innerWidth;
+        const rootX = this.d3Root.x || 0;
+        const rootY = this.d3Root.y || 0;
+
+        const transform = d3.zoomIdentity
+          .translate((width / 2) - rootX, 90 - rootY)
+          .scale(1.0);
+
+        d3.select("#chartViewport")
+          .transition()
+          .duration(450)
+          .call(this.zoomBehavior.transform, transform);
+      },
+
+      render() {
+        if (!AppState.rawEmployees || AppState.rawEmployees.length === 0) return;
+        this.updateStatsBar();
+
+        if (AppState.currentView === 'hierarchy') {
+          document.getElementById("chartSvg").style.display = "block";
+          document.getElementById("chartNodesLayer").style.display = "block";
+          document.getElementById("transversalContainer").classList.remove("visible");
+          this.renderHierarchyTree();
+        } else {
+          document.getElementById("chartSvg").style.display = "none";
+          document.getElementById("chartNodesLayer").style.display = "none";
+          document.getElementById("transversalContainer").classList.add("visible");
+          this.renderTransversalView();
+        }
+      },
+
+      renderHierarchyTree() {
+        const treeData = HierarchyEngine.buildTree(AppState.rawEmployees);
+        if (!treeData) return;
+
+        const root = d3.hierarchy(treeData, d => {
+          if (AppState.collapsedNodeIds.has(d.documento)) {
+            return null;
+          }
+          return d.children;
+        });
+
+        root.each(d => {
+          d.data._totalSubordinates = (d.data.children ? d.data.children.length : 0);
+        });
+
+        this.d3Root = root;
+
+        const isPrivacy = AppState.isPrivacyActive;
+        const nodeWidth = isPrivacy ? 255 : 275;
+        const nodeHeight = isPrivacy ? 120 : 180;
+        const gapX = isPrivacy ? 305 : 340;
+        const gapY = isPrivacy ? 180 : 240;
+
+        const treeLayout = d3.tree().nodeSize([gapX, gapY]);
+        treeLayout(root);
+
+        this.renderLinks(root, nodeHeight);
+        this.renderCards(root, nodeWidth, nodeHeight);
+      },
+
+      renderLinks(root, nodeHeight) {
+        const linksGroup = d3.select("#svgLinksGroup");
+        const links = root.links();
+
+        const paths = linksGroup.selectAll(".connector-path")
+          .data(links, d => `${d.source.data.documento}->${d.target.data.documento}`);
+
+        paths.enter()
+          .append("path")
+          .attr("class", "connector-path")
+          .merge(paths)
+          .transition()
+          .duration(320)
+          .attr("d", d => {
+            const sy = d.source.y + (nodeHeight / 2) + 6;
+            const ty = d.target.y - (nodeHeight / 2) - 4;
+            const my = (sy + ty) / 2;
+            return `M ${d.source.x} ${sy} C ${d.source.x} ${my}, ${d.target.x} ${my}, ${d.target.x} ${ty}`;
+          });
+
+        paths.exit().remove();
+      },
+
+      renderCards(root, nodeWidth, nodeHeight) {
+        const nodesLayer = d3.select("#chartNodesLayer");
+        const nodesData = root.descendants();
+
+        const cards = nodesLayer.selectAll(".org-card")
+          .data(nodesData, d => d.data.documento);
+
+        cards.exit()
+          .transition()
+          .duration(280)
+          .style("opacity", 0)
+          .style("transform", d => `translate(${d.x - nodeWidth / 2}px, ${d.y}px) scale(0.6)`)
+          .remove();
+
+        const enterCards = cards.enter()
+          .append("div")
+          .attr("class", d => `org-card ${d.depth === 0 ? 'is-ceo' : ''} ${d.data.isVacant ? 'is-vacant' : ''}`)
+          .style("opacity", 0)
+          .style("transform", d => `translate(${d.x - nodeWidth / 2}px, ${d.y - nodeHeight / 2}px) scale(0.8)`);
+
+        const allCards = enterCards.merge(cards);
+
+        allCards.each(function(d) {
+          const el = d3.select(this);
+          const emp = d.data;
+          const hasChildren = emp.children && emp.children.length > 0;
+          const isCollapsed = AppState.collapsedNodeIds.has(emp.documento);
+          const isVacant = Boolean(emp.isVacant);
+
+          el.classed("is-vacant", isVacant);
+
+          const isMatch = AppState.activeSearchTerm && (
+            normalizeStr(emp.nombre).includes(AppState.activeSearchTerm) ||
+            normalizeStr(emp.cargo).includes(AppState.activeSearchTerm) ||
+            normalizeStr(emp.area).includes(AppState.activeSearchTerm) ||
+            normalizeStr(emp.gerencia).includes(AppState.activeSearchTerm) ||
+            normalizeStr(emp.nivel).includes(AppState.activeSearchTerm) ||
+            normalizeStr(emp.documento).includes(AppState.activeSearchTerm) ||
+            (isVacant && AppState.activeSearchTerm.includes("vacante"))
+          );
+
+          el.classed("search-match", Boolean(isMatch));
+          el.classed("search-dimmed", Boolean(AppState.activeSearchTerm && !isMatch));
+
+          el.html(`
+            <!-- Fila Superior -->
+            <div class="card-top-row">
+              <span class="level-badge ${isVacant ? 'vacant-badge' : ''}">
+                <span class="dot"></span>
+                ${escapeHtml(isVacant ? 'Posición Vacante' : (emp.nivel || 'Nivel'))}
+              </span>
+              <span class="gerencia-tag" title="${escapeHtml(emp.gerencia)}">
+                ${escapeHtml(emp.gerencia)}
+              </span>
+            </div>
+
+            <!-- Sección Personal (Ocultable en Modo Privacidad) -->
+            <div class="card-personal-section">
+              <div class="card-avatar-ring ${isVacant ? 'vacant-avatar' : ''}">
+                ${isVacant ? `
+                  <div class="card-avatar-fallback vacant-icon" title="Cargo Vacante">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="22" height="22">
+                      <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round"/>
+                      <circle cx="8.5" cy="7" r="4"/>
+                      <line x1="20" y1="8" x2="20" y2="14"/>
+                      <line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                  </div>
+                ` : (emp.foto ? 
+                  `<img class="card-avatar-img" src="${escapeHtml(emp.foto)}" alt="${escapeHtml(emp.nombre)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'card-avatar-fallback\\'>${getInitials(emp.nombre)}</div>';">` :
+                  `<div class="card-avatar-fallback">${getInitials(emp.nombre)}</div>`
+                )}
+              </div>
+              <div class="card-personal-info">
+                <div class="card-name ${isVacant ? 'vacant-name' : ''}" title="${escapeHtml(isVacant ? 'Posición Vacante' : emp.nombre)}">
+                  ${escapeHtml(isVacant ? 'Posición Vacante' : emp.nombre)}
+                </div>
+                <div class="card-doc">${isVacant ? '<span class="vacant-pill">En Convocatoria</span>' : `Doc: ${escapeHtml(emp.documento)}`}</div>
+              </div>
+            </div>
+
+            <!-- Sección Corporativa: Cargo y Área -->
+            <div class="card-corp-section">
+              <div class="card-cargo" title="${escapeHtml(emp.cargo)}">${escapeHtml(emp.cargo)}</div>
+              <div class="card-area" title="${escapeHtml(emp.area)}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke-linecap="round"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>${escapeHtml(emp.area)}</span>
+              </div>
+            </div>
+
+            <!-- Botón Colapsar / Expandir -->
+            ${hasChildren ? `
+              <div class="collapse-handle ${isCollapsed ? 'collapsed' : ''}" data-doc="${emp.documento}" title="${isCollapsed ? 'Expandir equipo' : 'Colapsar equipo'}">
+                ${isCollapsed ? `<span class="sub-count">+${emp.children.length}</span>` : '−'}
+              </div>
+            ` : ''}
+          `);
+
+          const handle = el.select(".collapse-handle");
+          if (!handle.empty()) {
+            handle.on("click", (evt) => {
+              evt.stopPropagation();
+              OrgChartRenderer.toggleCollapse(emp.documento);
+            });
+          }
+
+          el.on("click", () => ModalService.open(emp));
+        });
+
+        allCards.transition()
+          .duration(320)
+          .style("opacity", 1)
+          .style("transform", d => `translate(${d.x - nodeWidth / 2}px, ${d.y - nodeHeight / 2}px) scale(1)`);
+      },
+
+      /**
+       * Expande/contrae un líder.
+       * Respeta si el usuario prefiere Auto-ajustar zoom o mantener zoom manual (Punto 1).
+       */
+      toggleCollapse(documento) {
+        if (AppState.collapsedNodeIds.has(documento)) {
+          AppState.collapsedNodeIds.delete(documento);
+        } else {
+          AppState.collapsedNodeIds.add(documento);
+        }
+        this.renderHierarchyTree();
+
+        if (AppState.autoFitOnToggle) {
+          this.fitToScreen();
+        }
+      },
+
+      renderTransversalView() {
+        const container = document.getElementById("transversalContainer");
+        container.innerHTML = "";
+
+        const groupedByLevel = new Map();
+        AppState.rawEmployees.forEach(emp => {
+          const lvl = emp.nivel || "Sin Nivel Asignado";
+          if (!groupedByLevel.has(lvl)) groupedByLevel.set(lvl, []);
+          groupedByLevel.get(lvl).push(emp);
+        });
+
+        const sortedLevels = Array.from(groupedByLevel.keys()).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+        sortedLevels.forEach(levelName => {
+          const members = groupedByLevel.get(levelName);
+          const band = document.createElement("section");
+          band.className = "transversal-level-band";
+
+          band.innerHTML = `
+            <div class="band-header">
+              <div class="band-title-wrap">
+                <span class="band-pill">${escapeHtml(levelName)}</span>
+                <span class="band-title">Agrupamiento Transversal Estratégico</span>
+              </div>
+              <span class="band-stats">${members.length} colaborador${members.length > 1 ? 'es' : ''}</span>
+            </div>
+            <div class="band-cards-grid" id="grid-${cleanId(levelName)}"></div>
+          `;
+
+          container.appendChild(band);
+          const grid = band.querySelector(`#grid-${cleanId(levelName)}`);
+
+          members.forEach(emp => {
+            const isVacant = Boolean(emp.isVacant);
+            const isMatch = AppState.activeSearchTerm && (
+              normalizeStr(emp.nombre).includes(AppState.activeSearchTerm) ||
+              normalizeStr(emp.cargo).includes(AppState.activeSearchTerm) ||
+              normalizeStr(emp.area).includes(AppState.activeSearchTerm) ||
+              normalizeStr(emp.gerencia).includes(AppState.activeSearchTerm) ||
+              normalizeStr(emp.nivel).includes(AppState.activeSearchTerm)
+            );
+
+            const card = document.createElement("div");
+            card.className = `org-card ${isVacant ? 'is-vacant' : ''} ${isMatch ? 'search-match' : ''} ${AppState.activeSearchTerm && !isMatch ? 'search-dimmed' : ''}`;
+            
+            card.innerHTML = `
+              <div class="card-top-row">
+                <span class="level-badge ${isVacant ? 'vacant-badge' : ''}"><span class="dot"></span>${escapeHtml(isVacant ? 'Vacante' : emp.nivel)}</span>
+                <span class="gerencia-tag" title="${escapeHtml(emp.gerencia)}">${escapeHtml(emp.gerencia)}</span>
+              </div>
+              <div class="card-personal-section">
+                <div class="card-avatar-ring ${isVacant ? 'vacant-avatar' : ''}">
+                  ${isVacant ? `
+                    <div class="card-avatar-fallback vacant-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
+                        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                      </svg>
+                    </div>
+                  ` : (emp.foto ? 
+                    `<img class="card-avatar-img" src="${escapeHtml(emp.foto)}" alt="${escapeHtml(emp.nombre)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'card-avatar-fallback\\'>${getInitials(emp.nombre)}</div>';">` :
+                    `<div class="card-avatar-fallback">${getInitials(emp.nombre)}</div>`
+                  )}
+                </div>
+                <div class="card-personal-info">
+                  <div class="card-name ${isVacant ? 'vacant-name' : ''}">${escapeHtml(isVacant ? 'Posición Vacante' : emp.nombre)}</div>
+                  <div class="card-doc">${isVacant ? '<span class="vacant-pill">En Convocatoria</span>' : `Doc: ${escapeHtml(emp.documento)}`}</div>
+                </div>
+              </div>
+              <div class="card-corp-section">
+                <div class="card-cargo" title="${escapeHtml(emp.cargo)}">${escapeHtml(emp.cargo)}</div>
+                <div class="card-area" title="${escapeHtml(emp.area)}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="12" height="12">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke-linecap="round"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <span>${escapeHtml(emp.area)}</span>
+                </div>
+              </div>
+            `;
+
+            card.addEventListener("click", () => ModalService.open(emp));
+            grid.appendChild(card);
+          });
+        });
+      },
+
+      updateStatsBar() {
+        const total = AppState.rawEmployees.length;
+        const gerencias = new Set(AppState.rawEmployees.map(e => e.gerencia)).size;
+        const areas = new Set(AppState.rawEmployees.map(e => e.area)).size;
+        const niveles = new Set(AppState.rawEmployees.map(e => e.nivel)).size;
+        const vacantes = AppState.rawEmployees.filter(e => e.isVacant).length;
+
+        document.getElementById("statTotalEmployees").textContent = total;
+        document.getElementById("statTotalGerencias").textContent = gerencias;
+        document.getElementById("statTotalAreas").textContent = areas;
+        document.getElementById("statTotalNiveles").textContent = niveles;
+        document.getElementById("statTotalVacantes").textContent = vacantes;
+      },
+
+      fitToScreen() {
+        if (AppState.currentView !== 'hierarchy' || !this.d3Root) return;
+
+        const viewport = document.getElementById("chartViewport");
+        const width = viewport.clientWidth;
+        const height = viewport.clientHeight;
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        this.d3Root.each(d => {
+          if (d.x < minX) minX = d.x;
+          if (d.x > maxX) maxX = d.x;
+          if (d.y < minY) minY = d.y;
+          if (d.y > maxY) maxY = d.y;
+        });
+
+        const treeW = (maxX - minX) + 360;
+        const treeH = (maxY - minY) + 260;
+        const scale = Math.min(width / treeW, height / treeH, 1.2) * 0.9;
+        const midX = (minX + maxX) / 2;
+        const midY = (minY + maxY) / 2;
+
+        const transform = d3.zoomIdentity
+          .translate(width / 2 - midX * scale, height / 2 - midY * scale)
+          .scale(scale);
+
+        d3.select("#chartViewport")
+          .transition()
+          .duration(500)
+          .call(this.zoomBehavior.transform, transform);
+      },
+
+      zoomBy(delta) {
+        d3.select("#chartViewport")
+          .transition()
+          .duration(250)
+          .call(this.zoomBehavior.scaleBy, delta);
+      }
+    };
+
+    /**
+     * ============================================================================
+     * MÓDULO 7: EXPORTADOR DE PRESENTACIÓN PDF 16:9
+     * ============================================================================
+     */
+    const PresentationExporter = {
+      async exportSlidePDF() {
+        const overlay = document.getElementById("exportLoadingOverlay");
+        const slideContainer = document.getElementById("exportSlideContainer");
+        overlay.classList.add("active");
+
+        try {
+          slideContainer.style.display = "flex";
+          slideContainer.style.position = "fixed";
+          slideContainer.style.left = "0";
+          slideContainer.style.top = "0";
+          slideContainer.style.zIndex = "99999";
+
+          const slideBody = document.getElementById("slideBodyViewport");
+          slideBody.innerHTML = "";
+
+          const modeLabel = AppState.currentView === 'hierarchy' ? "Vista Jerárquica" : "Vista Transversal";
+          const privacyLabel = AppState.isPrivacyActive ? "Modo Confidencial" : "Datos Completos";
+          const today = new Date().toISOString().split("T")[0];
+
+          document.getElementById("slideBadgeViewMode").textContent = modeLabel;
+          document.getElementById("slideBadgePrivacy").textContent = privacyLabel;
+          document.getElementById("slideBadgeDate").textContent = `Fecha: ${today}`;
+
+          const slideW = 1840;
+          const slideH = 880;
+
+          if (AppState.currentView === 'hierarchy') {
+            const cloneWrapper = document.createElement("div");
+            cloneWrapper.style.position = "relative";
+            cloneWrapper.style.width = `${slideW}px`;
+            cloneWrapper.style.height = `${slideH}px`;
+            cloneWrapper.style.overflow = "hidden";
+
+            const originalSvg = document.getElementById("chartSvg");
+            const originalNodes = document.getElementById("chartNodesLayer");
+
+            const clonedSvg = originalSvg.cloneNode(true);
+            const clonedNodes = originalNodes.cloneNode(true);
+
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            OrgChartRenderer.d3Root.each(d => {
+              if (d.x < minX) minX = d.x;
+              if (d.x > maxX) maxX = d.x;
+              if (d.y < minY) minY = d.y;
+              if (d.y > maxY) maxY = d.y;
+            });
+
+            const treeW = (maxX - minX) + 360;
+            const treeH = (maxY - minY) + 260;
+            const fitScale = Math.min(slideW / treeW, slideH / treeH, 1.1) * 0.95;
+
+            const midX = (minX + maxX) / 2;
+            const midY = (minY + maxY) / 2;
+            const shiftX = (slideW / 2) - (midX * fitScale);
+            const shiftY = (slideH / 2) - (midY * fitScale);
+
+            clonedSvg.setAttribute("width", slideW);
+            clonedSvg.setAttribute("height", slideH);
+            clonedSvg.setAttribute("viewBox", `0 0 ${slideW} ${slideH}`);
+            clonedSvg.style.position = "absolute";
+            clonedSvg.style.left = "0";
+            clonedSvg.style.top = "0";
+            clonedSvg.style.width = `${slideW}px`;
+            clonedSvg.style.height = `${slideH}px`;
+
+            clonedSvg.querySelector("#svgLinksGroup").setAttribute("transform", `translate(${shiftX}, ${shiftY}) scale(${fitScale})`);
+            
+            clonedNodes.style.position = "absolute";
+            clonedNodes.style.left = "0";
+            clonedNodes.style.top = "0";
+            clonedNodes.style.transformOrigin = "0 0";
+            clonedNodes.style.transform = `translate(${shiftX}px, ${shiftY}px) scale(${fitScale})`;
+
+            cloneWrapper.appendChild(clonedSvg);
+            cloneWrapper.appendChild(clonedNodes);
+            slideBody.appendChild(cloneWrapper);
+          } else {
+            const transversalClone = document.getElementById("transversalContainer").cloneNode(true);
+            transversalClone.style.display = "flex";
+            transversalClone.style.width = "100%";
+            transversalClone.style.height = "100%";
+            transversalClone.style.overflow = "auto";
+            slideBody.appendChild(transversalClone);
+          }
+
+          await new Promise(r => setTimeout(r, 250));
+
+          const filename = `Organigrama_Corporativo_${AppState.currentView === 'hierarchy' ? 'Jerarquico' : 'Transversal'}.pdf`;
+
+          const canvas = await html2canvas(slideContainer, {
+            scale: 1.25,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff',
+            width: 1920,
+            height: 1080,
+            windowWidth: 1920,
+            windowHeight: 1080,
+            logging: false
+          });
+
+          if (!canvas || canvas.width === 0) {
+            throw new Error("No se pudo renderizar el lienzo gráfico.");
+          }
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          const { jsPDF } = window.jspdf || window;
+          const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'px',
+            format: [1920, 1080],
+            hotfixes: ['px_scaling']
+          });
+
+          pdf.addImage(imgData, 'JPEG', 0, 0, 1920, 1080);
+          pdf.save(filename);
+
+          showToast("Presentación PDF 16:9 descargada exitosamente");
+        } catch (err) {
+          console.error("Error al exportar PDF:", err);
+          showToast("Error al exportar PDF: " + err.message);
+        } finally {
+          slideContainer.style.display = "none";
+          overlay.classList.remove("active");
+        }
+      }
+    };
+
+    /**
+     * ============================================================================
+     * MÓDULO 8: MODAL DE DETALLE & HELPERS
+     * ============================================================================
+     */
+    const ModalService = {
+      open(collab) {
+        const isVacant = Boolean(collab.isVacant);
+        document.getElementById("modalCollabName").textContent = isVacant ? "Posición Vacante (En Convocatoria)" : collab.nombre;
+        document.getElementById("modalCollabDoc").textContent = isVacant ? "Estado: Disponible para Contratación" : `Documento: ${collab.documento}`;
+        document.getElementById("modalCollabCargo").textContent = collab.cargo;
+        document.getElementById("modalCollabGerencia").textContent = collab.gerencia;
+        document.getElementById("modalCollabArea").textContent = collab.area;
+        document.getElementById("modalCollabNivel").textContent = collab.nivel;
+
+        const reportsCount = collab.children ? collab.children.length : 0;
+        document.getElementById("modalCollabReports").textContent = reportsCount > 0 ? 
+          `${reportsCount} colaboradores directos` : "Línea operativa individual";
+
+        const bossInfo = collab.cargoReporta ? 
+          `${collab.nombreReporta ? collab.nombreReporta + ' — ' : ''}${collab.cargoReporta}` : 
+          (collab.reportaA ? `Doc Jefe: ${collab.reportaA}` : "Alta Dirección / Cabeza de Organización");
+        document.getElementById("modalCollabBoss").textContent = bossInfo;
+
+        const avatarBox = document.getElementById("modalAvatarBox");
+        if (isVacant) {
+          avatarBox.innerHTML = `
+            <div class="fallback-lg vacant">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="34" height="34">
+                <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+            </div>
+          `;
+        } else if (collab.foto) {
+          avatarBox.innerHTML = `<img src="${escapeHtml(collab.foto)}" alt="${escapeHtml(collab.nombre)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'fallback-lg\\'>${getInitials(collab.nombre)}</div>';">`;
+        } else {
+          avatarBox.innerHTML = `<div class="fallback-lg">${getInitials(collab.nombre)}</div>`;
+        }
+
+        document.getElementById("collaboratorModal").classList.add("active");
+      },
+
+      close() {
+        document.getElementById("collaboratorModal").classList.remove("active");
+      }
+    };
+
+    function downloadFile(content, filename, mimeType) {
+      const blob = (content instanceof Blob) ? content : new Blob([content], { type: mimeType });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.style.display = "none";
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 3000);
+    }
+
+    function normalizeStr(str) {
+      return String(str || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toastMessage");
+      document.getElementById("toastText").textContent = message;
+      toast.classList.add("active");
+      setTimeout(() => toast.classList.remove("active"), 3500);
+    }
+
+    function formatPhotoUrl(rawUrl) {
+      if (!rawUrl || typeof rawUrl !== 'string') return '';
+      const url = rawUrl.trim();
+      if (!url) return '';
+
+      if (url.includes('drive.google.com') || url.includes('docs.google.com') || url.includes('googleusercontent.com')) {
+        const idMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+                        url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+                        url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (idMatch && idMatch[1]) {
+          return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w400`;
+        }
+      }
+      return url;
+    }
+
+    function getInitials(name) {
+      if (!name || typeof name !== 'string') return "CO";
+      const clean = name.trim().replace(/^(ing\.|dr\.|dra\.|lic\.|mg\.|phd\.|sr\.|sra\.)\s*/i, '');
+      const parts = clean.split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return "CO";
+      if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function cleanId(str) {
+      return String(str).replace(/[^a-zA-Z0-9]/g, "_");
+    }
+
+    /**
+     * ============================================================================
+     * MÓDULO 9: INICIALIZACIÓN Y EVENT LISTENERS
+     * ============================================================================
+     */
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 1. Inicializar Logo
+      LogoService.init();
+
+      // 2. Determinar origen de datos prioritario: LocalStorage -> JSON pregrabado -> Datos muestra
+      let initialEmployees = StorageService.load();
+
+      if (!initialEmployees) {
+        initialEmployees = await StorageService.loadPreloadedJSON();
+      }
+
+      if (!initialEmployees) {
+        initialEmployees = [...INITIAL_SAMPLE_DATA];
+      }
+
+      AppState.rawEmployees = initialEmployees;
+      StorageService.updateStatusBadge();
+
+      // 3. Inicializar Viewport D3 y renderizar
+      OrgChartRenderer.init();
+      OrgChartRenderer.render();
+
+      // 4. Cumplimiento Punto 1: Iniciar SIEMPRE contraído y con zoom al 100%
+      setTimeout(() => {
+        OrgChartRenderer.collapseToInitialState();
+        OrgChartRenderer.render();
+        OrgChartRenderer.setZoom100();
+      }, 150);
+
+      // --- MANEJO DE ARCHIVOS EXCEL ---
+      const fileInput = document.getElementById("excelFileInput");
+      const btnUploadExcel = document.getElementById("btnUploadExcel");
+
+      async function handleExcelFile(file) {
+        if (!file) return;
+        try {
+          showToast("Procesando archivo Excel...");
+          const parsedData = await ExcelService.parseUploadedFile(file);
+          
+          if (!parsedData || parsedData.length === 0) {
+            throw new Error("No se encontraron registros válidos en el archivo.");
+          }
+
+          AppState.rawEmployees = parsedData;
+          StorageService.save(parsedData, file.name);
+
+          // Al subir archivo, renderizar contraído con zoom 100%
+          OrgChartRenderer.render();
+          setTimeout(() => {
+            OrgChartRenderer.collapseToInitialState();
+            OrgChartRenderer.render();
+            OrgChartRenderer.setZoom100();
+          }, 150);
+
+          showToast(`¡Éxito! ${parsedData.length} colaboradores importados.`);
+        } catch (err) {
+          alert(`Error al procesar el Excel: ${err.message}`);
+          console.error(err);
+        } finally {
+          fileInput.value = "";
+        }
+      }
+
+      btnUploadExcel.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) handleExcelFile(file);
+      });
+
+      // --- GUARDAR Y CARGAR JSON (PUNTO 5) ---
+      const jsonFileInput = document.getElementById("jsonFileInput");
+      const btnSaveJSON = document.getElementById("btnSaveJSON");
+      const btnUploadJSON = document.getElementById("btnUploadJSON");
+
+      btnSaveJSON.addEventListener("click", () => {
+        StorageService.downloadJSON(AppState.rawEmployees);
+      });
+
+      btnUploadJSON.addEventListener("click", () => jsonFileInput.click());
+      jsonFileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (!Array.isArray(data) || data.length === 0) {
+              throw new Error("El archivo JSON no contiene un arreglo válido.");
+            }
+            AppState.rawEmployees = data;
+            StorageService.save(data, file.name);
+            OrgChartRenderer.render();
+            setTimeout(() => {
+              OrgChartRenderer.collapseToInitialState();
+              OrgChartRenderer.render();
+              OrgChartRenderer.setZoom100();
+            }, 150);
+            showToast(`¡Éxito! ${data.length} registros cargados desde JSON.`);
+          } catch (err) {
+            alert("Error al cargar JSON: " + err.message);
+          } finally {
+            jsonFileInput.value = "";
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      // Restablecer datos predeterminados
+      document.getElementById("btnResetData").addEventListener("click", () => {
+        if (confirm("¿Deseas restablecer los datos al organigrama inicial de demostración?")) {
+          StorageService.clear();
+          AppState.rawEmployees = [...INITIAL_SAMPLE_DATA];
+          OrgChartRenderer.render();
+          setTimeout(() => {
+            OrgChartRenderer.collapseToInitialState();
+            OrgChartRenderer.render();
+            OrgChartRenderer.setZoom100();
+          }, 150);
+          showToast("Datos restablecidos a la configuración inicial");
+        }
+      });
+
+      // Botón Colapsar Todo y Expandir Todo
+      document.getElementById("btnCollapseAll").addEventListener("click", () => OrgChartRenderer.collapseAll());
+      document.getElementById("btnExpandAll").addEventListener("click", () => OrgChartRenderer.expandAll());
+
+      // Drag & Drop
+      const dragOverlay = document.getElementById("dragDropOverlay");
+      let dragCounter = 0;
+
+      window.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        dragCounter++;
+        if (dragOverlay) dragOverlay.classList.add("active");
+      });
+
+      window.addEventListener("dragover", (e) => e.preventDefault());
+
+      window.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) {
+          dragCounter = 0;
+          if (dragOverlay) dragOverlay.classList.remove("active");
+        }
+      });
+
+      window.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        if (dragOverlay) dragOverlay.classList.remove("active");
+
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          const file = e.dataTransfer.files[0];
+          if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+            handleExcelFile(file);
+          } else if (file.name.endsWith(".json")) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              try {
+                const data = JSON.parse(ev.target.result);
+                AppState.rawEmployees = data;
+                StorageService.save(data, file.name);
+                OrgChartRenderer.render();
+                setTimeout(() => {
+                  OrgChartRenderer.collapseToInitialState();
+                  OrgChartRenderer.render();
+                  OrgChartRenderer.setZoom100();
+                }, 150);
+                showToast("JSON cargado exitosamente");
+              } catch (err) {
+                alert("Error al procesar JSON: " + err.message);
+              }
+            };
+            reader.readAsText(file);
+          } else {
+            alert("Arrastra un archivo Excel (.xlsx, .xls) o JSON (.json)");
+          }
+        }
+      });
+
+      // Modal de Instrucciones
+      const instructionsModal = document.getElementById("instructionsModal");
+      const btnHelpInstructions = document.getElementById("btnHelpInstructions");
+      const instructionsCloseBtn = document.getElementById("instructionsCloseBtn");
+      const btnInstructionsOk = document.getElementById("btnInstructionsOk");
+
+      function openInstructions() {
+        if (instructionsModal) instructionsModal.classList.add("active");
+      }
+      function closeInstructions() {
+        if (instructionsModal) instructionsModal.classList.remove("active");
+      }
+
+      if (btnHelpInstructions) btnHelpInstructions.addEventListener("click", openInstructions);
+      if (instructionsCloseBtn) instructionsCloseBtn.addEventListener("click", closeInstructions);
+      if (btnInstructionsOk) btnInstructionsOk.addEventListener("click", closeInstructions);
+      if (instructionsModal) {
+        instructionsModal.addEventListener("click", (e) => {
+          if (e.target.id === "instructionsModal") closeInstructions();
+        });
+      }
+
+      // Descargar plantilla oficial
+      document.getElementById("btnDownloadTemplate").addEventListener("click", () => {
+        ExcelService.downloadTemplate();
+      });
+
+      // Alternar Vistas
+      const btnViewHierarchy = document.getElementById("btnViewHierarchy");
+      const btnViewTransversal = document.getElementById("btnViewTransversal");
+
+      btnViewHierarchy.addEventListener("click", () => {
+        if (AppState.currentView === 'hierarchy') return;
+        AppState.currentView = 'hierarchy';
+        btnViewHierarchy.classList.add("active");
+        btnViewTransversal.classList.remove("active");
+        OrgChartRenderer.render();
+        setTimeout(() => OrgChartRenderer.setZoom100(), 100);
+      });
+
+      btnViewTransversal.addEventListener("click", () => {
+        if (AppState.currentView === 'transversal') return;
+        AppState.currentView = 'transversal';
+        btnViewTransversal.classList.add("active");
+        btnViewHierarchy.classList.remove("active");
+        OrgChartRenderer.render();
+      });
+
+      // Privacidad
+      const privacyWrap = document.getElementById("btnTogglePrivacy");
+      privacyWrap.addEventListener("click", () => {
+        AppState.isPrivacyActive = !AppState.isPrivacyActive;
+        privacyWrap.classList.toggle("active", AppState.isPrivacyActive);
+        document.body.classList.toggle("privacy-active", AppState.isPrivacyActive);
+        OrgChartRenderer.render();
+        showToast(AppState.isPrivacyActive ? "Modo Privacidad Activado" : "Modo Privacidad Desactivado");
+      });
+
+      // Exportar PDF
+      document.getElementById("btnExportPDF").addEventListener("click", () => {
+        PresentationExporter.exportSlidePDF();
+      });
+
+      // Buscador
+      const searchInput = document.getElementById("searchInput");
+      searchInput.addEventListener("input", (e) => {
+        const query = normalizeStr(e.target.value.trim());
+        AppState.activeSearchTerm = query;
+
+        if (query) {
+          AppState.rawEmployees.forEach(emp => {
+            const matches = (
+              normalizeStr(emp.nombre).includes(query) ||
+              normalizeStr(emp.cargo).includes(query) ||
+              normalizeStr(emp.area).includes(query) ||
+              normalizeStr(emp.gerencia).includes(query) ||
+              normalizeStr(emp.nivel).includes(query) ||
+              (emp.isVacant && query.includes("vacante"))
+            );
+            if (matches && emp.reportaA) {
+              let pId = emp.reportaA;
+              while (pId) {
+                AppState.collapsedNodeIds.delete(pId);
+                const parent = AppState.rawEmployees.find(p => p.documento === pId);
+                pId = parent ? parent.reportaA : null;
+              }
+            }
+          });
+        }
+
+        OrgChartRenderer.render();
+      });
+
+      // Controles de Zoom Flotantes
+      document.getElementById("btnZoomIn").addEventListener("click", () => OrgChartRenderer.zoomBy(1.25));
+      document.getElementById("btnZoomOut").addEventListener("click", () => OrgChartRenderer.zoomBy(0.8));
+      document.getElementById("btnZoomFit").addEventListener("click", () => OrgChartRenderer.fitToScreen());
+      document.getElementById("btnZoom100").addEventListener("click", () => OrgChartRenderer.setZoom100());
+
+      // Toggle Modo Zoom (Punto 1: Auto-ajuste o Manual)
+      const btnToggleZoomMode = document.getElementById("btnToggleZoomMode");
+      const zoomModeIcon = document.getElementById("zoomModeIcon");
+
+      btnToggleZoomMode.addEventListener("click", () => {
+        AppState.autoFitOnToggle = !AppState.autoFitOnToggle;
+        if (AppState.autoFitOnToggle) {
+          btnToggleZoomMode.classList.add("active-auto");
+          zoomModeIcon.textContent = "🎯";
+          btnToggleZoomMode.title = "Modo Zoom: Auto-Ajuste Activado (Clic para volver a Manual)";
+          showToast("Modo Zoom: Auto-ajustar al expandir/colapsar activado");
+        } else {
+          btnToggleZoomMode.classList.remove("active-auto");
+          zoomModeIcon.textContent = "🖐️";
+          btnToggleZoomMode.title = "Modo Zoom: Manual (Clic para activar Auto-Ajuste)";
+          showToast("Modo Zoom: Manual fijado (no altera el zoom al expandir)");
+        }
+      });
+
+      // Modal Detalles
+      document.getElementById("modalCloseBtn").addEventListener("click", () => ModalService.close());
+      document.getElementById("collaboratorModal").addEventListener("click", (e) => {
+        if (e.target.id === "collaboratorModal") ModalService.close();
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          ModalService.close();
+          closeInstructions();
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (AppState.currentView === 'hierarchy' && AppState.autoFitOnToggle) {
+          OrgChartRenderer.fitToScreen();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
