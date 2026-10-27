@@ -1,56 +1,82 @@
-# 🏢 Organigrama Dinámico Corporativo | Executive Suite v2.0
+# 🏢 Organigrama Dinámico Moovia | Executive Suite v2.1
 
-Visualizador interactivo de organigrama corporativo de alta fidelidad, diseñado con arquitectura D3.js, SheetJS, soporte de posiciones vacantes, persistencia de datos (JSON y LocalStorage), y listo para despliegue inmediato en **Git** y **Vercel**.
+Visualizador interactivo de organigrama corporativo de alta fidelidad para **Moovia**, diseñado con arquitectura moderna Vanilla CSS (Neumorfismo + Glassmorfismo), D3.js v7, SheetJS, soporte de posiciones vacantes, auto-guardado en JSON, auto-zoom por grupo y barra de herramientas colapsable. Optimizado para despliegue en **GitHub** y **Vercel**.
+
+Repositorio oficial: [https://github.com/wilvar88/OrganigramaMoovia.git](https://github.com/wilvar88/OrganigramaMoovia.git)
+
+---
+
+## ✨ Novedades y Características Principales
+
+1. **Auto-Guardado Automático en JSON al subir Excel**:
+   - Al hacer clic en **"Subir Excel"** y seleccionar un archivo `.xlsx`, el sistema procesa toda la jerarquía y **guarda automáticamente el archivo `data/organigrama.json`** en el proyecto (cuando se ejecuta con el servidor local Node.js `npm start`).
+   - Además, cuenta con guardado instantáneo en la memoria del navegador (`localStorage`) y descarga automática como respaldo si se abre como archivo estático.
+   
+2. **Auto-Zoom Inteligente por Grupo al Expandir (`+`)**:
+   - Al pulsar el botón `+` para desplegar cualquier grupo o jefatura, la vista realiza una suave transición cinemática que **centra el grupo y ajusta el zoom al tamaño máximo posible** para que todos los colaboradores del equipo recién abierto sean visibles en el recuadro de la pantalla.
+   - Al colapsar, se re-centra suavemente sobre el líder del equipo.
+
+3. **Zona de Menú Colapsable (Recupera +25% de Espacio)**:
+   - Botón **"▲ Ocultar Menú"** en la barra superior y pestaña flotante **"▼ Mostrar Menú"**.
+   - Oculta el encabezado y barra de botones para maximizar la superficie visual del organigrama.
+   - Atajo de teclado rápido: Presiona la tecla **`M`** para ocultar/mostrar el menú al instante.
+   - Recuerda tu preferencia automáticamente en tu navegador.
+
+4. **Gestión Inteligente de Vacantes y Renuncias (10 Columnas)**:
+   - Identifica colaboradores con cargo `Vacante`.
+   - Si un líder renunció o está vacante, vincula a los colaboradores a través de las columnas `"Nombre a Quien Reporta"` y `"Cargo a quien reporta"`.
+   - Crea automáticamente la relación jerárquica con el cargo y el área correspondiente para evitar cargos huérfanos.
+
+5. **Identidad Visual Moovia**:
+   - Logo oficial de Moovia integrado en la esquina superior izquierda (`logo.png`).
+   - Modo de exportación a presentación ejecutiva en formato 16:9 con alta resolución.
 
 ---
 
 ## 🚀 Despliegue Rápido en Vercel (Paso a Paso)
 
-Este proyecto está optimizado como aplicación web estática de alto rendimiento para desplegarse en segundos:
+Este proyecto está optimizado como aplicación web estática de alto rendimiento para desplegarse en segundos en **Vercel**:
 
-### 1. Inicializar y subir a tu repositorio Git (GitHub / GitLab / Bitbucket)
-Si aún no has vinculado tu repositorio remoto, abre tu terminal en la carpeta del proyecto y ejecuta:
+### Opción A: Despliegue con 1 Clic desde GitHub (Recomendado)
+1. Ve a tu cuenta en [vercel.com](https://vercel.com) e inicia sesión (con tu cuenta de GitHub).
+2. Haz clic en el botón **"Add New..."** -> **"Project"**.
+3. En la lista de repositorios, selecciona **`OrganigramaMoovia`** (o importa `https://github.com/wilvar88/OrganigramaMoovia.git`).
+4. Vercel detectará automáticamente la configuración (`vercel.json` y `package.json`). **No necesitas configurar comandos de build ni variables de entorno.**
+5. Haz clic en **"Deploy"**.
+6. ¡Listo! En menos de 20 segundos tendrás un enlace público HTTPS (ej. `https://organigrama-moovia.vercel.app`) con certificado SSL activo y CDN global. Cada vez que hagas `git push` a `main`, Vercel actualizará tu organigrama automáticamente.
 
+### Opción B: Despliegue mediante Vercel CLI
+Si prefieres usar la consola:
 ```bash
-# 1. Comprobar que git está inicializado (ya lo dejamos inicializado para ti)
-git status
+# Iniciar sesión en Vercel
+vercel login
 
-# 2. Agregar todos los archivos y confirmar cambios
-git add .
-git commit -m "feat: organigrama corporativo v2 con soporte de vacantes, persistencia y logo"
-
-# 3. Vincular con tu repositorio en GitHub (reemplaza TU_USUARIO y TU_REPO)
-git remote add origin https://github.com/TU_USUARIO/TU_REPO.git
-git branch -M main
-git push -u origin main
+# Desplegar a producción
+vercel --prod
 ```
-
-### 2. Desplegar en Vercel con 1 Clic
-1. Entra a [vercel.com](https://vercel.com) e inicia sesión.
-2. Haz clic en **"Add New..."** -> **"Project"**.
-3. Selecciona tu repositorio de GitHub recién subido.
-4. Vercel detectará automáticamente la configuración (`vercel.json`). **No necesitas configurar variables de entorno ni comandos de build.**
-5. Haz clic en **"Deploy"**. En 10 segundos tendrás tu enlace público HTTPS funcionando para toda tu organización.
 
 ---
 
-## 💾 ¿Cómo funciona la Memoria y Persistencia de la Información?
+## 💻 Comandos Git para Sincronizar con GitHub
 
-Para darte máxima flexibilidad y compatibilidad con Vercel, el sistema cuenta con dos niveles de persistencia:
+Para subir tus últimos cambios a GitHub:
 
-### Nivel 1: Memoria Automática en Navegador (`localStorage`)
-- Cada vez que subes un archivo Excel (`.xlsx` o `.xls`) o cargas un archivo `.json`, el sistema **guarda automáticamente toda la estructura en la memoria de tu navegador**.
-- Si recargas la página, cierras el navegador o abres la pestaña días después, tus datos y la jerarquía se cargarán inmediatamente sin pedirte volver a subir el archivo.
+```bash
+# 1. Verificar estado
+git status
 
-### Nivel 2: Memoria Oficial del Proyecto (`data/organigrama.json`)
-- Las plataformas como Vercel y GitHub son de solo lectura en ejecución (no permiten que un navegador modifique directamente los archivos del servidor por seguridad).
-- Por eso, la aplicación incluye el botón **"Guardar JSON"** en la barra superior.
-- **Flujo recomendado para actualizar el organigrama para todos los usuarios en Vercel:**
-  1. Abre la aplicación y sube tu nuevo archivo Excel con las novedades de personal.
-  2. Haz clic en el botón **"Guardar JSON"** (se descargará `organigrama.json`).
-  3. Reemplaza el archivo `organigrama.json` dentro de la carpeta `data/` del proyecto.
-  4. Haz `git commit -am "actualizar organigrama"` y `git push`.
-  5. ¡Listo! Vercel se actualizará al instante y cualquier persona que entre a tu enlace verá el nuevo organigrama.
+# 2. Agregar todos los archivos
+git add .
+
+# 3. Crear commit con las novedades
+git commit -m "feat: auto-zoom grupos, menu colapsable, auto-guardado json y soporte moovia"
+
+# 4. Asegurar rama main
+git branch -M main
+
+# 5. Enviar a GitHub
+git push -u origin main
+```
 
 ---
 
@@ -90,38 +116,17 @@ Puedes descargar la plantilla oficial en cualquier momento haciendo clic en **"D
 
 ---
 
-## 🖼️ Personalización del Logo de la Empresa
-
-En la parte superior izquierda de la aplicación:
-1. Deja tu archivo de logo en la carpeta raíz del proyecto con el nombre:
-   - `logo.png` (o también compatible con `logo.svg`, `logo.jpg`, `logo.webp`).
-2. ¡Listo! La aplicación lo detectará y mostrará automáticamente con alta resolución tanto en la barra superior como en la exportación a presentación PDF 16:9.
-3. Si lo deseas, también puedes hacer clic sobre el logo en la aplicación para cargar un logo nuevo desde tu navegador.
-
----
-
-## 🔍 Comportamiento de Zoom y Colapso Inicial
-
-1. **Estado Inicial Contraído a Escala 100%:**
-   - Al cargar la aplicación o subir un archivo, el organigrama **inicia contraído** (muestra al líder principal/CEO y sus líderes de primer nivel con los contadores de colaboradores a cargo `+N`).
-   - El zoom arranca fijado exactamente al **100%** (`1.0x`) centrado en el líder superior.
-2. **Modo de Zoom al Colapsar / Expandir:**
-   - En el dock flotante inferior derecho dispones de:
-     - Botón **`100%`**: Regresa inmediatamente a la escala 1:1 centrada.
-     - Botón **`Auto-Ajustar / Manual`**: Te permite alternar entre que la vista se adapte automáticamente al expandir equipos grandes o se mantenga en escala manual según tu preferencia.
-     - Botones **`Colapsar Todo`** y **`Expandir Todo`** en la barra de métricas.
-
----
-
 ## 🛠️ Ejecución Local
 
 Para probar localmente en tu equipo:
-- Simplemente abre el archivo `index.html` en tu navegador favorito (Chrome, Edge, Firefox, Safari).
-- O si prefieres con un servidor local:
+- **Modo Servidor Local (Recomendado)**:
   ```bash
   npm start
   # Abre http://localhost:3000
   ```
+  Permite auto-guardado directo en disco del archivo `data/organigrama.json` al subir Excel.
+- **Modo Navegador Directo**:
+  Abre directamente `index.html` en Chrome, Edge o Firefox con doble clic.
 
 ---
-*Desarrollado con arquitectura moderna Vanilla CSS (Neumorfismo + Glassmorfismo), D3.js v7, SheetJS y html2canvas/jsPDF.*
+*Desarrollado para Moovia con arquitectura moderna Vanilla CSS (Neumorfismo + Glassmorfismo), D3.js v7, SheetJS y html2canvas/jsPDF.*

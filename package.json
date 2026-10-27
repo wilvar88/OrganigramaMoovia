@@ -1,19 +1,23 @@
 {
-  "name": "organigrama-dinamico-corporativo",
-  "version": "2.0.0",
-  "description": "Visualizador interactivo de organigrama corporativo con soporte para cargos vacantes, persistencia JSON y exportación PDF 16:9",
-  "main": "index.html",
+  "name": "organigrama-moovia",
+  "version": "2.1.0",
+  "description": "Visualizador interactivo de organigrama corporativo con soporte de vacantes, auto-zoom de grupos, menú colapsable, persistencia JSON automática y despliegue en Vercel",
+  "main": "server.js",
   "scripts": {
-    "start": "npx serve -l 3000 .",
-    "dev": "npx serve -l 3000 ."
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wilvar88/OrganigramaMoovia.git"
   },
   "keywords": [
     "organigrama",
     "org-chart",
     "d3",
-    "hierarchy",
     "excel",
     "sheetjs",
+    "moovia",
     "vercel"
   ],
   "author": "Executive Suite",

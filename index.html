@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Organigrama Dinámico Corporativo | Executive Suite</title>
+  <title>Organigrama Dinámico Corporativo | Moovia Executive Suite</title>
   <meta name="description" content="Visualizador interactivo de organigrama corporativo con vista jerárquica y transversal, importación de Excel, soporte de cargos vacantes, persistencia JSON y exportación a presentación PDF en formato 16:9.">
 
   <!-- Google Fonts: Plus Jakarta Sans & Inter -->
@@ -58,7 +58,7 @@
       --nm-btn-active: inset 2px 2px 5px rgba(11, 37, 70, 0.14), inset -2px -2px 5px #ffffff;
 
       /* Glassmorfismo */
-      --glass-bg: rgba(255, 255, 255, 0.88);
+      --glass-bg: rgba(255, 255, 255, 0.90);
       --glass-bg-dark: rgba(11, 37, 70, 0.90);
       --glass-border: 1px solid rgba(255, 255, 255, 0.85);
       --glass-blur: blur(16px);
@@ -99,7 +99,7 @@
     }
 
     /* ==========================================================================
-       2. TOP BAR & LOGO CORPORATIVO
+       2. TOP BAR, LOGO & MENÚ COLAPSABLE (PUNTO 3: MAXIMIZAR ESPACIO DEL ORGANIGRAMA)
        ========================================================================== */
     .header-nav {
       position: sticky;
@@ -115,7 +115,8 @@
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 14px;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .brand-section {
@@ -124,14 +125,14 @@
       gap: 14px;
     }
 
-    /* Contenedor del Logo de la Empresa (Superior Izquierda) */
+    /* Contenedor del Logo de la Empresa (Superior Izquierda - Punto 4) */
     .brand-logo-container {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 44px;
-      max-height: 48px;
-      max-width: 190px;
+      max-height: 50px;
+      max-width: 200px;
       cursor: pointer;
       position: relative;
       transition: transform 0.2s ease;
@@ -142,8 +143,8 @@
     }
 
     .brand-logo-img {
-      max-height: 44px;
-      max-width: 180px;
+      max-height: 46px;
+      max-width: 190px;
       object-fit: contain;
       display: block;
       filter: drop-shadow(0 2px 6px rgba(11, 37, 70, 0.08));
@@ -197,12 +198,102 @@
       font-weight: 500;
     }
 
+    /* Botón para Ocultar / Mostrar Barra de Menú (Punto 3) */
+    .btn-toggle-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0f5fa;
+      color: var(--navy-dark);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 7px 13px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--nm-btn);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn-toggle-menu:hover {
+      background: #ffffff;
+      color: var(--brand-blue);
+      box-shadow: var(--nm-hover);
+    }
+
+    .btn-toggle-menu svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.3s ease;
+    }
+
+    /* Pestaña Flotante que aparece cuando el menú está oculto (Pantalla Completa) */
+    .floating-menu-tab {
+      position: fixed;
+      top: 10px;
+      right: 24px;
+      z-index: 120;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(35, 196, 196, 0.35);
+      border-radius: var(--radius-full);
+      padding: 8px 18px;
+      box-shadow: 0 6px 20px rgba(11, 37, 70, 0.12), var(--nm-flat);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      animation: fadeInDown 0.3s ease;
+    }
+
+    .floating-menu-tab:hover {
+      background: #ffffff;
+      color: var(--brand-blue);
+      transform: translateY(2px) scale(1.03);
+      box-shadow: 0 8px 24px rgba(31, 103, 246, 0.22);
+    }
+
+    .floating-menu-tab svg {
+      width: 15px;
+      height: 15px;
+      stroke: var(--brand-blue);
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Acciones del Toolbar */
     .toolbar-actions {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 10px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ESTADO MENÚ COLAPSADO (RECUPERA EL 25% DE ESPACIO DE PANTALLA) */
+    body.menu-collapsed .toolbar-actions {
+      display: none !important;
+    }
+
+    body.menu-collapsed .header-nav {
+      padding: 6px 20px;
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    body.menu-collapsed .metrics-bar {
+      padding: 4px 20px;
+    }
+
+    body.menu-collapsed .floating-menu-tab {
+      display: inline-flex;
     }
 
     /* Botones Neumórficos */
@@ -409,7 +500,7 @@
        3. FRANJA DE MÉTRICAS & INDICADORES DE MEMORIA
        ========================================================================== */
     .metrics-bar {
-      background: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.72);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(35, 196, 196, 0.15);
       padding: 7px 24px;
@@ -420,6 +511,7 @@
       font-size: 0.76rem;
       color: var(--text-muted);
       z-index: 90;
+      transition: all 0.3s ease;
     }
 
     .metric-item {
@@ -488,6 +580,11 @@
       overflow: hidden;
       cursor: grab;
       min-height: calc(100vh - 120px);
+      transition: min-height 0.3s ease;
+    }
+
+    body.menu-collapsed .chart-viewport {
+      min-height: calc(100vh - 65px);
     }
 
     .chart-viewport:active {
@@ -557,16 +654,13 @@
       border-color: rgba(31, 103, 246, 0.45);
     }
 
-    /* Acento para líder superior / CEO */
     .org-card.is-ceo {
       background: linear-gradient(160deg, #ffffff 0%, #f0f7fe 100%);
       border: 1.5px solid rgba(31, 103, 246, 0.55);
       box-shadow: 10px 10px 24px rgba(31, 103, 246, 0.14), -8px -8px 22px #ffffff, 0 0 16px rgba(35, 196, 196, 0.25);
     }
 
-    /* ==========================================================================
-       ESTILOS EXCLUSIVOS PARA CARGOS VACANTES (PUNTO 3)
-       ========================================================================== */
+    /* Estilos para Cargos Vacantes (Punto 3) */
     .org-card.is-vacant {
       border: 2px dashed var(--vacant-border);
       background: linear-gradient(145deg, #ffffff 0%, var(--vacant-bg) 100%);
@@ -920,7 +1014,7 @@
     }
 
     /* ==========================================================================
-       7. DOCK FLOTANTE DE ZOOM & NAVEGACIÓN (PUNTO 1: 100% Y AUTO/MANUAL)
+       7. DOCK FLOTANTE DE ZOOM & NAVEGACIÓN
        ========================================================================== */
     .zoom-dock {
       position: absolute;
@@ -978,12 +1072,6 @@
       font-weight: 800;
       color: var(--brand-blue);
       padding: 2px;
-    }
-
-    .zoom-btn-mode.active-auto {
-      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
-      color: #ffffff;
-      border-color: transparent;
     }
 
     /* ==========================================================================
@@ -1390,12 +1478,20 @@
 </head>
 <body>
 
+  <!-- Pestaña Flotante cuando el Menú está Oculto (Punto 3: Maximizar 25% de espacio) -->
+  <div class="floating-menu-tab" id="floatingMenuTab" title="Desplegar barra de menú y herramientas (Atajo: tecla M)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M4 6h16M4 12h16M4 18h16" stroke-width="2.3" stroke-linecap="round"/>
+    </svg>
+    <span>Mostrar Menú</span>
+  </div>
+
   <!-- ==========================================================================
-       BARRA DE NAVEGACIÓN SUPERIOR (CON LOGO EMPRESARIAL Y CONTROLES)
+       BARRA DE NAVEGACIÓN SUPERIOR
        ========================================================================== -->
-  <header class="header-nav">
+  <header class="header-nav" id="mainHeaderNav">
     <div class="brand-section">
-      <!-- Logo de la empresa en la esquina superior izquierda (Punto 4) -->
+      <!-- Logo de la empresa (Punto 4: Moovia) -->
       <div class="brand-logo-container" id="brandLogoContainer" title="Logo de la Empresa (Haz clic para cambiar)">
         <img id="companyLogoImg" src="logo.png" alt="Logo de la Empresa" class="brand-logo-img">
         <div id="companyLogoFallback" class="brand-logo-badge" style="display: none;">
@@ -1407,19 +1503,27 @@
       <input type="file" id="logoFileInput" accept="image/*">
 
       <div class="brand-info">
-        <h1>Apex Corp <span class="pro-pill">Executive Suite</span></h1>
+        <h1>Moovia <span class="pro-pill">Executive Suite</span></h1>
         <p>Visualizador Estructural & Transversal de Organigrama</p>
       </div>
+
+      <!-- Botón Ocultar / Colapsar Menú (Punto 3) -->
+      <button class="btn-toggle-menu" id="btnToggleMenu" title="Ocultar barra de herramientas para ganar 25% más de espacio de visualización">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" id="toggleMenuIcon">
+          <path d="M18 15l-6-6-6 6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="toggleMenuText">Ocultar Menú</span>
+      </button>
     </div>
 
     <!-- Barra de Herramientas Principal -->
-    <div class="toolbar-actions">
+    <div class="toolbar-actions" id="mainToolbarActions">
       <!-- Inputs de Carga -->
       <input type="file" id="excelFileInput" accept=".xlsx, .xls">
       <input type="file" id="jsonFileInput" accept=".json">
 
-      <!-- Botón Subir Excel -->
-      <button class="nm-btn nm-btn-primary" id="btnUploadExcel" title="Cargar archivo Excel con las 10 columnas oficiales">
+      <!-- Botón Subir Excel (Punto 1: Auto-guarda en .json sin reprocesos) -->
+      <button class="nm-btn nm-btn-primary" id="btnUploadExcel" title="Cargar archivo Excel (Guarda automáticamente como JSON dentro del proyecto)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -1434,7 +1538,7 @@
         <span>Descargar Plantilla</span>
       </button>
 
-      <!-- Botón Guardar JSON para Vercel / Git (Punto 5) -->
+      <!-- Botón Guardar JSON para Vercel / Git -->
       <button class="nm-btn" id="btnSaveJSON" title="Descargar organigrama.json para guardarlo en la carpeta /data del proyecto y subir a Vercel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
@@ -1512,7 +1616,7 @@
   <!-- ==========================================================================
        FRANJA DE MÉTRICAS, ESTADO DE MEMORIA & ACCIONES RÁPIDAS
        ========================================================================== -->
-  <aside class="metrics-bar">
+  <aside class="metrics-bar" id="mainMetricsBar">
     <div class="metric-item">
       <span class="metric-dot"></span>
       <span>Colaboradores: <strong id="statTotalEmployees">0</strong></span>
@@ -1534,14 +1638,14 @@
       <span>Vacantes: <strong id="statTotalVacantes">0</strong></span>
     </div>
 
-    <!-- Indicador de Memoria y Persistencia (Punto 5) -->
+    <!-- Indicador de Memoria y Persistencia -->
     <div class="memory-status-badge" id="memoryStatusBadge" title="Estado de almacenamiento local y en el proyecto">
       <span class="metric-dot lime" id="memoryStatusDot"></span>
       <span id="memoryStatusText">Memoria del proyecto</span>
       <button class="btn-text-action" id="btnResetData" title="Restablecer datos originales del proyecto">Restablecer</button>
     </div>
 
-    <!-- Acciones de Colapso Rápido (Punto 1) -->
+    <!-- Acciones de Colapso Rápido -->
     <div class="metric-item" style="margin-left: auto; gap: 8px;">
       <button class="nm-btn nm-btn-sm" id="btnCollapseAll" title="Contraer todos los niveles inferiores">
         <span>− Colapsar Todo</span>
@@ -1574,7 +1678,7 @@
     <div class="transversal-container" id="transversalContainer"></div>
   </main>
 
-  <!-- Dock Flotante de Zoom & Navegación (Punto 1) -->
+  <!-- Dock Flotante de Zoom & Navegación -->
   <nav class="zoom-dock" aria-label="Controles de navegación">
     <button class="zoom-btn" id="btnZoomIn" title="Acercar (+)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1598,11 +1702,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
       </svg>
-    </button>
-
-    <!-- Botón Modo Zoom: Manual vs Auto-ajustable -->
-    <button class="zoom-btn zoom-btn-mode" id="btnToggleZoomMode" title="Modo Zoom: Manual (Clic para activar Auto-Ajuste al expandir/colapsar)">
-      <span id="zoomModeIcon" style="font-size: 0.95rem;">🖐️</span>
     </button>
   </nav>
 
@@ -1680,46 +1779,42 @@
       <div class="instructions-step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <h4>Estructura de las 10 Columnas Oficiales</h4>
-          <p>Usa el botón <strong>"Descargar Plantilla"</strong> para obtener el archivo Excel con las 10 columnas en el orden exacto:</p>
-          <p style="margin-top: 4px; font-size: 0.8rem; line-height: 1.6;">
-            <code>1. Documento</code> • <code>2. Nombre</code> • <code>3. Foto del Colaborador</code> • <code>4. Cargo</code> • <code>5. Área</code> • <code>6. Gerencia</code> • <code>7. Nivel</code> • <code>8. Reporta A</code> • <strong><code>9. Nombre a Quien Reporta</code></strong> • <strong><code>10. Cargo a quien reporta</code></strong>
-          </p>
+          <h4>Subida Automática sin Reprocesos (Punto 1)</h4>
+          <p>Al hacer clic en <strong>"Subir Excel"</strong>, el sistema lee tu archivo, actualiza el organigrama y <strong>guarda automáticamente la información como archivo .json en el proyecto</strong> y en la memoria del navegador. No tienes que realizar pasos extras.</p>
         </div>
       </div>
 
       <div class="instructions-step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <h4>Manejo Inteligente de Cargos Vacantes o Renuncias</h4>
-          <p>• <strong>Si un cargo está vacante:</strong> Escribe <code>Vacante</code> en la columna <code>Nombre</code>. El sistema lo resaltará con borde punteado dorado y distintivo de convocatoria.</p>
-          <p style="margin-top: 4px;">• <strong>Si una persona le reporta a un cargo vacante:</strong> En <code>Nombre a Quien Reporta</code> escribe <code>Vacante</code> y en <code>Cargo a quien reporta</code> escribe el título del cargo. El sistema <strong>asociará automáticamente a los colaboradores con ese cargo y área</strong>, garantizando que nadie quede huérfano.</p>
+          <h4>Auto-Zoom Centrado al Abrir Grupos (Punto 2)</h4>
+          <p>Al hacer clic en el botón <code>+</code> de cualquier líder para expandir su equipo, el visor realiza un <strong>auto-zoom inteligente</strong>: centra el grupo en la pantalla y lo ajusta al <strong>tamaño máximo posible</strong> para que todo el equipo quede visible dentro del recuadro de tu pantalla sin cortes.</p>
         </div>
       </div>
 
       <div class="instructions-step">
         <div class="step-num">3</div>
         <div class="step-body">
-          <h4>Zoom Inicial al 100% y Control de Colapso</h4>
-          <p>• El organigrama siempre inicia <strong>contraído y con zoom al 100%</strong> centrado en el líder superior para máxima claridad.</p>
-          <p style="margin-top: 4px;">• Con el botón <strong>🖐️ Manual / 🎯 Auto</strong> en el dock de zoom puedes elegir si al expandir o colapsar equipos la pantalla se re-ajusta automáticamente o conserva tu nivel de zoom manual.</p>
+          <h4>Ocultar / Colapsar Menú para Ganar Espacio (Punto 3)</h4>
+          <p>Usa el botón <strong>"▲ Ocultar Menú"</strong> en la parte superior (o presiona la tecla <code>M</code> en tu teclado) para plegar las herramientas y ganar más de un 25% de espacio vertical para el organigrama. Una pestaña flotante te permitirá volverlo a desplegar en cualquier instante.</p>
         </div>
       </div>
 
       <div class="instructions-step">
         <div class="step-num">4</div>
         <div class="step-body">
-          <h4>Logo de tu Empresa & Personalización</h4>
-          <p>Deja el archivo de imagen de tu logo en la carpeta raíz del proyecto con el nombre <code>logo.png</code> (o <code>logo.svg</code> / <code>logo.jpg</code>). Se mostrará automáticamente en la esquina superior izquierda y en las diapositivas PDF. También puedes hacer clic sobre el logo para probar una imagen al instante.</p>
+          <h4>Manejo de Cargos Vacantes o Renuncias (Punto 3)</h4>
+          <p>• Si el campo de nombre dice <code>Vacante</code>, se resalta con borde punteado dorado.</p>
+          <p style="margin-top: 4px;">• Si las personas reportan a una posición vacante, el sistema hace la relación automática con los <strong>cargos y áreas</strong> correspondientes.</p>
         </div>
       </div>
 
       <div class="instructions-step">
         <div class="step-num">5</div>
         <div class="step-body">
-          <h4>Memoria Persistente y Despliegue en Git / Vercel</h4>
-          <p>• <strong>Memoria en tu navegador:</strong> Cada vez que subas un Excel, se guarda automáticamente en <code>localStorage</code>.</p>
-          <p style="margin-top: 4px;">• <strong>Para Vercel y toda la empresa:</strong> Haz clic en <strong>"Guardar JSON"</strong>, coloca el archivo descargado en la carpeta <code>data/organigrama.json</code> y súbelo a Git. ¡Vercel lo mostrará automáticamente a cualquier persona que ingrese!</p>
+          <h4>Repositorio en GitHub y Despliegue en Vercel</h4>
+          <p>Proyecto configurado para: <code>https://github.com/wilvar88/OrganigramaMoovia.git</code></p>
+          <p style="margin-top: 4px;">Conectado con Vercel para despliegue instantáneo mediante <code>vercel.json</code> y servidor Node.js.</p>
         </div>
       </div>
 
@@ -1738,7 +1833,7 @@
         </svg>
       </div>
       <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--navy-dark); margin-bottom: 6px;">¡Suelta tu archivo Excel aquí!</h3>
-      <p style="font-size: 0.85rem; color: var(--text-muted);">Soporta .xlsx y .xls con las 10 columnas y vacantes.</p>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Se guardará automáticamente como JSON en el proyecto.</p>
     </div>
   </div>
 
@@ -1784,35 +1879,35 @@
   </div>
 
   <!-- ==========================================================================
-       LÓGICA JAVASCRIPT: DATASTORE, EXCEL, HIERARCHY ENGINE, D3 & EXPORTADOR
+       LÓGICA JAVASCRIPT: DATASTORE, AUTO-GUARDADO JSON, D3 & AUTO-ZOOM DE GRUPO
        ========================================================================== -->
   <script>
     /**
      * ============================================================================
-     * MÓDULO 1: ESTADO GLOBAL DE LA APLICACIÓN Y DATASET DE PRUEBA OFICIAL
+     * MÓDULO 1: ESTADO GLOBAL DE LA APLICACIÓN
      * ============================================================================
      */
     const AppState = {
-      rawEmployees: [],         // Colaboradores normalizados con 10 columnas
-      hierarchyTree: null,      // Estructura en árbol D3
-      currentView: 'hierarchy', // 'hierarchy' | 'transversal'
-      isPrivacyActive: false,   // true = oculta foto, nombre y documento
+      rawEmployees: [],
+      hierarchyTree: null,
+      currentView: 'hierarchy',
+      isPrivacyActive: false,
       zoomTransform: d3.zoomIdentity,
       activeSearchTerm: '',
       collapsedNodeIds: new Set(),
-      autoFitOnToggle: false    // false = Zoom manual (Punto 1); true = Auto-ajustar al colapsar/expandir
+      isMenuCollapsed: false
     };
 
     /**
-     * Dataset de prueba predeterminado con las 10 columnas y demostración de VACANTE
+     * Dataset de respaldo predeterminado
      */
     const INITIAL_SAMPLE_DATA = [
       {
         documento: "1001001",
-        nombre: "Valeria Mendoza Cruz",
-        foto: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
-        cargo: "Chief Executive Officer (CEO)",
-        area: "Alta Dirección",
+        nombre: "Javier Cancela Frias",
+        foto: "",
+        cargo: "Presidente ejecutivo",
+        area: "Presidencia",
         gerencia: "Gerencia General",
         nivel: "Nivel 1 - Estratégico",
         reportaA: "",
@@ -1821,192 +1916,35 @@
       },
       {
         documento: "1002001",
-        nombre: "Ing. Carlos Benítez Vargas",
-        foto: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80",
-        cargo: "Gerente de Tecnología & CTO",
-        area: "Tecnología e Innovación",
-        gerencia: "Gerencia de Tecnología",
-        nivel: "Nivel 2 - Táctico / Gerencial",
-        reportaA: "1001001",
-        nombreReporta: "Valeria Mendoza Cruz",
-        cargoReporta: "Chief Executive Officer (CEO)"
-      },
-      {
-        documento: "1002002",
-        nombre: "Sofía Herrera Paz",
-        foto: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80",
-        cargo: "Líder de Arquitectura Cloud & DevOps",
-        area: "Infraestructura Cloud",
-        gerencia: "Gerencia de Tecnología",
-        nivel: "Nivel 3 - Jefatura / Líder",
-        reportaA: "1002001",
-        nombreReporta: "Ing. Carlos Benítez Vargas",
-        cargoReporta: "Gerente de Tecnología & CTO"
-      },
-      {
-        documento: "1002003",
-        nombre: "Mateo Morales Peña",
-        foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-        cargo: "Senior DevOps & Cloud Engineer",
-        area: "Infraestructura Cloud",
-        gerencia: "Gerencia de Tecnología",
-        nivel: "Nivel 4 - Especialista",
-        reportaA: "1002002",
-        nombreReporta: "Sofía Herrera Paz",
-        cargoReporta: "Líder de Arquitectura Cloud & DevOps"
-      },
-      {
-        documento: "1002004",
-        nombre: "Lucía Castillo Rivera",
-        foto: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&auto=format&fit=crop&q=80",
-        cargo: "Lead Frontend Architect",
-        area: "Desarrollo de Software",
-        gerencia: "Gerencia de Tecnología",
-        nivel: "Nivel 3 - Jefatura / Líder",
-        reportaA: "1002001",
-        nombreReporta: "Ing. Carlos Benítez Vargas",
-        cargoReporta: "Gerente de Tecnología & CTO"
-      },
-      {
-        documento: "1002005",
-        nombre: "Diego Salazar Ortiz",
-        foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
-        cargo: "Especialista Frontend & UI/UX",
-        area: "Desarrollo de Software",
-        gerencia: "Gerencia de Tecnología",
-        nivel: "Nivel 4 - Especialista",
-        reportaA: "1002004",
-        nombreReporta: "Lucía Castillo Rivera",
-        cargoReporta: "Lead Frontend Architect"
-      },
-      {
-        documento: "1003001",
-        nombre: "Dr. Roberto Navarro Silva",
-        foto: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80",
-        cargo: "Chief Financial Officer (CFO)",
-        area: "Finanzas Corporativas",
-        gerencia: "Gerencia Financiera",
-        nivel: "Nivel 2 - Táctico / Gerencial",
-        reportaA: "1001001",
-        nombreReporta: "Valeria Mendoza Cruz",
-        cargoReporta: "Chief Executive Officer (CEO)"
-      },
-      {
-        documento: "1003002",
-        nombre: "Mariana Gómez Alarcón",
-        foto: "https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?w=400&auto=format&fit=crop&q=80",
-        cargo: "Jefa de Auditoría & Contabilidad",
-        area: "Contabilidad y Tributación",
-        gerencia: "Gerencia Financiera",
-        nivel: "Nivel 3 - Jefatura / Líder",
-        reportaA: "1003001",
-        nombreReporta: "Dr. Roberto Navarro Silva",
-        cargoReporta: "Chief Financial Officer (CFO)"
-      },
-      {
-        documento: "1003003",
-        nombre: "Javier Rojas Cárdenas",
-        foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80",
-        cargo: "Analista Senior de Planeación Financiera",
-        area: "Planeación Financiera",
-        gerencia: "Gerencia Financiera",
-        nivel: "Nivel 4 - Especialista",
-        reportaA: "1003001",
-        nombreReporta: "Dr. Roberto Navarro Silva",
-        cargoReporta: "Chief Financial Officer (CFO)"
-      },
-      {
-        documento: "1004001",
-        nombre: "Alejandro Restrepo Duque",
-        foto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80",
-        cargo: "Chief Commercial Officer (CCO)",
-        area: "Estrategia Comercial",
-        gerencia: "Gerencia Comercial",
-        nivel: "Nivel 2 - Táctico / Gerencial",
-        reportaA: "1001001",
-        nombreReporta: "Valeria Mendoza Cruz",
-        cargoReporta: "Chief Executive Officer (CEO)"
-      },
-      {
-        documento: "1004002",
-        nombre: "Camila Quintero Beltrán",
-        foto: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
-        cargo: "Directora de Cuentas Corporativas Enterprise",
-        area: "Ventas Enterprise B2B",
-        gerencia: "Gerencia Comercial",
-        nivel: "Nivel 3 - Jefatura / Líder",
-        reportaA: "1004001",
-        nombreReporta: "Alejandro Restrepo Duque",
-        cargoReporta: "Chief Commercial Officer (CCO)"
-      },
-      {
-        documento: "1004003",
-        nombre: "Andrés Paredes Meza",
+        nombre: "Mateo Hernandez Contreras",
         foto: "",
-        cargo: "Key Account Manager Senior",
-        area: "Ventas Enterprise B2B",
-        gerencia: "Gerencia Comercial",
-        nivel: "Nivel 4 - Especialista",
-        reportaA: "1004002",
-        nombreReporta: "Camila Quintero Beltrán",
-        cargoReporta: "Directora de Cuentas Corporativas Enterprise"
-      },
-      {
-        documento: "1004004",
-        nombre: "Valentina Silva Rincón",
-        foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-        cargo: "Líder de Growth Marketing & Marca",
-        area: "Marketing Digital & Growth",
-        gerencia: "Gerencia Comercial",
-        nivel: "Nivel 3 - Jefatura / Líder",
-        reportaA: "1004001",
-        nombreReporta: "Alejandro Restrepo Duque",
-        cargoReporta: "Chief Commercial Officer (CCO)"
-      },
-      {
-        documento: "1005001",
-        nombre: "Daniela Ordoñez Maya",
-        foto: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&auto=format&fit=crop&q=80",
-        cargo: "Gerente de People & Culture",
-        area: "Talento Humano",
-        gerencia: "Gerencia de Talento Humano",
+        cargo: "Gerente General",
+        area: "Operaciones Generales",
+        gerencia: "Gerencia General",
         nivel: "Nivel 2 - Táctico / Gerencial",
         reportaA: "1001001",
-        nombreReporta: "Valeria Mendoza Cruz",
-        cargoReporta: "Chief Executive Officer (CEO)"
+        nombreReporta: "Javier Cancela Frias",
+        cargoReporta: "Presidente ejecutivo"
       },
-      {
-        documento: "1005002",
-        nombre: "Felipe Cárdenas León",
-        foto: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80",
-        cargo: "Especialista de Atracción Tech & Bienestar",
-        area: "Desarrollo Organizacional",
-        gerencia: "Gerencia de Talento Humano",
-        nivel: "Nivel 4 - Especialista",
-        reportaA: "1005001",
-        nombreReporta: "Daniela Ordoñez Maya",
-        cargoReporta: "Gerente de People & Culture"
-      },
-      // Demostración Oficial de Cargos Vacantes (Puntos 2 y 3)
       {
         documento: "VAC-1006000",
         nombre: "Vacante",
         foto: "",
         cargo: "Gerente de Operaciones & Supply Chain",
-        area: "Operaciones Estratégicas",
-        gerencia: "Gerencia de Operaciones",
+        area: "Operaciones",
+        gerencia: "Gerencia General",
         nivel: "Nivel 2 - Táctico / Gerencial",
         reportaA: "1001001",
-        nombreReporta: "Valeria Mendoza Cruz",
-        cargoReporta: "Chief Executive Officer (CEO)"
+        nombreReporta: "Javier Cancela Frias",
+        cargoReporta: "Presidente ejecutivo"
       },
       {
         documento: "1006001",
         nombre: "Marcos Villanueva Paz",
-        foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+        foto: "",
         cargo: "Coordinador de Cadena de Suministro",
-        area: "Operaciones Estratégicas",
-        gerencia: "Gerencia de Operaciones",
+        area: "Operaciones",
+        gerencia: "Gerencia General",
         nivel: "Nivel 3 - Jefatura / Líder",
         reportaA: "",
         nombreReporta: "Vacante",
@@ -2015,10 +1953,10 @@
       {
         documento: "1006002",
         nombre: "Camila Estrada Ríos",
-        foto: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&auto=format&fit=crop&q=80",
-        cargo: "Analista Senior de Comercio Exterior & Aduanas",
-        area: "Operaciones Estratégicas",
-        gerencia: "Gerencia de Operaciones",
+        foto: "",
+        cargo: "Analista Senior de Operaciones",
+        area: "Operaciones",
+        gerencia: "Gerencia General",
         nivel: "Nivel 4 - Especialista",
         reportaA: "1006001",
         nombreReporta: "Marcos Villanueva Paz",
@@ -2028,8 +1966,10 @@
 
     /**
      * ============================================================================
-     * MÓDULO 2: GESTIÓN DE PERSISTENCIA & MEMORIA LOCAL/PROYECTO (PUNTO 5)
+     * MÓDULO 2: GESTIÓN DE PERSISTENCIA & AUTO-GUARDADO JSON (PUNTO 1)
      * ============================================================================
+     * Cuando se sube un archivo Excel, automáticamente se guarda como .json dentro del
+     * proyecto mediante el endpoint /api/save-json o se auto-descarga sin reprocesos.
      */
     const StorageService = {
       STORAGE_KEY: "organigrama_saved_data_v2",
@@ -2048,6 +1988,42 @@
         } catch (e) {
           console.warn("No se pudo escribir en localStorage:", e);
         }
+      },
+
+      /**
+       * Auto-guarda en el proyecto (PUNTO 1):
+       * Intenta guardar en el servidor local/API /api/save-json.
+       * Si se corre directamente como archivo estático, genera y descarga organigrama.json
+       * automáticamente sin que el usuario tenga que hacer reprocesos.
+       */
+      async autoSaveToProject(data) {
+        // 1. Intentar guardar en backend /api/save-json si está disponible
+        try {
+          const res = await fetch('/api/save-json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success) {
+              showToast(`¡Excel guardado automáticamente en ${result.path}! (${data.length} personas)`);
+              return true;
+            }
+          }
+        } catch (err) {
+          // Servidor local no activo o entorno estático puro
+        }
+
+        // 2. Si no hay backend local, auto-descarga directamente organigrama.json sin clics extras
+        try {
+          const jsonStr = JSON.stringify(data, null, 2);
+          downloadFile(jsonStr, "organigrama.json", "application/json");
+          showToast(`¡Excel importado! Guardado en memoria y descargado automáticamente como organigrama.json`);
+        } catch (e) {
+          showToast(`¡Excel importado y guardado en memoria! (${data.length} colaboradores)`);
+        }
+        return false;
       },
 
       load() {
@@ -2075,7 +2051,7 @@
             }
           }
         } catch (e) {
-          console.info("Archivo ./data/organigrama.json no cargado directamente por fetch (entorno file:// o CORS):", e);
+          console.info("Archivo ./data/organigrama.json no disponible:", e);
         }
         return null;
       },
@@ -2092,7 +2068,7 @@
         const filename = "organigrama.json";
         const jsonStr = JSON.stringify(data, null, 2);
         downloadFile(jsonStr, filename, "application/json");
-        showToast("organigrama.json descargado. Guárdalo en /data para actualizar en Vercel.");
+        showToast("organigrama.json descargado exitosamente");
       },
 
       updateStatusBadge() {
@@ -2117,7 +2093,7 @@
 
     /**
      * ============================================================================
-     * MÓDULO 3: GESTIÓN DEL LOGO EMPRESARIAL (PUNTO 4)
+     * MÓDULO 3: GESTIÓN DEL LOGO EMPRESARIAL (PUNTO 4: MOOVIA)
      * ============================================================================
      */
     const LogoService = {
@@ -2130,7 +2106,7 @@
         const logoInput = document.getElementById("logoFileInput");
         const logoContainer = document.getElementById("brandLogoContainer");
 
-        // 1. Revisar si hay un logo guardado en memoria por el usuario
+        // 1. Revisar si hay un logo en memoria
         const savedLogo = localStorage.getItem(this.LOGO_STORAGE_KEY);
         if (savedLogo) {
           if (logoImg) logoImg.src = savedLogo;
@@ -2138,17 +2114,13 @@
           return;
         }
 
-        // 2. Intentar cadena de formatos automáticos: logo.png -> logo.svg -> logo.jpg -> fallback
+        // 2. Cargar logo.png del proyecto con fallback
         if (logoImg) {
           logoImg.onerror = function() {
             if (!this._triedSvg) {
               this._triedSvg = true;
               this.src = "logo.svg";
               if (slideLogo) slideLogo.src = "logo.svg";
-            } else if (!this._triedJpg) {
-              this._triedJpg = true;
-              this.src = "logo.jpg";
-              if (slideLogo) slideLogo.src = "logo.jpg";
             } else {
               this.style.display = "none";
               if (logoFallback) logoFallback.style.display = "flex";
@@ -2157,7 +2129,7 @@
           };
         }
 
-        // 3. Permitir cambiar logo haciendo clic en la imagen
+        // 3. Permitir cambiar logo haciendo clic
         if (logoContainer && logoInput) {
           logoContainer.addEventListener("click", () => logoInput.click());
 
@@ -2179,7 +2151,7 @@
                 slideLogo.style.display = "block";
               }
               if (logoFallback) logoFallback.style.display = "none";
-              showToast("Logo de empresa actualizado exitosamente");
+              showToast("Logo de empresa actualizado");
             };
             reader.readAsDataURL(file);
           });
@@ -2189,7 +2161,7 @@
 
     /**
      * ============================================================================
-     * MÓDULO 4: PARSEO Y GESTIÓN DE EXCEL CON SHEETJS (PUNTO 2: 10 COLUMNAS)
+     * MÓDULO 4: PARSEO DE EXCEL CON SHEETJS (10 COLUMNAS)
      * ============================================================================
      */
     const ExcelService = {
@@ -2224,19 +2196,6 @@
         });
       },
 
-      /**
-       * Normalización de las 10 columnas oficiales:
-       * 1. Documento
-       * 2. Nombre
-       * 3. Foto del Colaborador
-       * 4. Cargo
-       * 5. Área
-       * 6. Gerencia
-       * 7. Nivel
-       * 8. Reporta A
-       * 9. Nombre a Quien Reporta (Nuevo - Punto 2)
-       * 10. Cargo a quien reporta (Nuevo - Punto 2)
-       */
       normalizeRows(rows) {
         return rows.map((row, index) => {
           const keys = Object.keys(row);
@@ -2246,19 +2205,18 @@
             return key ? String(row[key]).trim() : "";
           };
 
-          const documento = findVal(/^(documento|doc|cedula|cdula|identificacion|identificacin|dni|id)$/i) || `EMP-${index + 1000}`;
-          const nombre = findVal(/^(nombre|colaborador|empleado|full\s*name)$/i) || "Colaborador Sin Nombre";
+          const documento = findVal(/^(documento|doc|cedula|cdula|cédula|identificacion|identificacin|dni|id)$/i) || `EMP-${index + 1000}`;
+          const nombre = findVal(/^(nombre|evaluado|colaborador|empleado|full\s*name)$/i) || "Colaborador Sin Nombre";
           const rawFoto = findVal(/^(foto|foto\s*del\s*colaborador|imagen|url|avatar|picture|foto\s*drive|drive)$/i);
           const foto = formatPhotoUrl(rawFoto);
           const cargo = findVal(/^(cargo|posicion|posicin|puesto|rol|job\s*title)$/i) || "Cargo Asignado";
-          const area = findVal(/^(area|rea|departamento|unidad)$/i) || "Operaciones Generales";
-          const gerencia = findVal(/^(gerencia|division|divisin)$/i) || "Gerencia General";
-          const nivel = findVal(/^(nivel|level|peso|rango)$/i) || "Nivel 3 - Operativo";
-          const reportaA = findVal(/^(reporta|reporta\s*a|documento\s*jefe|id\s*jefe|superior\s*doc)$/i);
+          const area = findVal(/^(area|rea|área|departamento|unidad)$/i) || "Operaciones Generales";
+          const gerencia = findVal(/^(gerencia|division|divisin|división)$/i) || "Gerencia General";
+          const nivel = findVal(/^(nivel|level|peso|rango)$/i) || (/presidente|director|ceo/i.test(cargo) ? "Nivel 1 - Estratégico" : (/gerente/i.test(cargo) ? "Nivel 2 - Táctico" : "Nivel 3 - Operativo"));
+          const reportaA = findVal(/^(reporta|reporta\s*a|documento\s*jefe|id\s*jefe|cedula\s*evaluador|cédula\s*evaluador)$/i);
 
-          // Nuevas Columnas solicitadas (Punto 2)
-          const nombreReporta = findVal(/^(nombre\s*a\s*quien\s*reporta|nombre\s*jefe|jefe\s*nombre|reporta\s*a\s*nombre|superior\s*nombre|quien\s*reporta\s*nombre)$/i);
-          const cargoReporta = findVal(/^(cargo\s*a\s*quien\s*reporta|cargo\s*jefe|jefe\s*cargo|reporta\s*a\s*cargo|superior\s*cargo|cargo\s*reporta|quien\s*reporta\s*cargo)$/i);
+          const nombreReporta = findVal(/^(nombre\s*a\s*quien\s*reporta|nombre\s*jefe|jefe\s*nombre|evaluador|reporta\s*a\s*nombre|superior\s*nombre)$/i);
+          const cargoReporta = findVal(/^(cargo\s*a\s*quien\s*reporta|cargo\s*jefe|jefe\s*cargo|cargo\s*evaluador|reporta\s*a\s*cargo|superior\s*cargo)$/i);
 
           const isVacant = /^(vacante|posici[oó]n\s*vacante|disponible|sin\s*asignar)$/i.test(nombre.trim());
 
@@ -2278,9 +2236,6 @@
         });
       },
 
-      /**
-       * Genera y descarga la plantilla Excel oficial de 10 columnas
-       */
       downloadTemplate() {
         const templateHeaders = [
           "Documento",
@@ -2311,22 +2266,22 @@
         const worksheet = XLSX.utils.json_to_sheet(templateData, { header: templateHeaders });
         
         worksheet['!cols'] = [
-          { wch: 14 }, // Documento
-          { wch: 28 }, // Nombre
-          { wch: 45 }, // Foto URL
-          { wch: 34 }, // Cargo
-          { wch: 26 }, // Área
-          { wch: 26 }, // Gerencia
-          { wch: 24 }, // Nivel
-          { wch: 14 }, // Reporta A
-          { wch: 28 }, // Nombre a Quien Reporta (Nuevo)
-          { wch: 34 }  // Cargo a quien reporta (Nuevo)
+          { wch: 14 },
+          { wch: 28 },
+          { wch: 45 },
+          { wch: 34 },
+          { wch: 26 },
+          { wch: 26 },
+          { wch: 24 },
+          { wch: 14 },
+          { wch: 28 },
+          { wch: 34 }
         ];
 
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Organigrama");
 
-        const filename = "Plantilla_Organigrama_Corporativo_10_Columnas.xlsx";
+        const filename = "Plantilla_Organigrama_Moovia_10_Columnas.xlsx";
 
         try {
           XLSX.writeFile(workbook, filename);
@@ -2340,22 +2295,19 @@
           setTimeout(() => document.body.removeChild(link), 1500);
         }
 
-        showToast("Plantilla oficial descargada con las 10 columnas y vacantes");
+        showToast("Plantilla oficial descargada con las 10 columnas oficiales");
       }
     };
 
     /**
      * ============================================================================
-     * MÓDULO 5: MOTOR DE JERARQUÍA & RELACIÓN POR CARGOS/ÁREAS (PUNTOS 2 Y 3)
+     * MÓDULO 5: MOTOR DE JERARQUÍA INTELIGENTE & RELACIÓN DE VACANTES POR CARGO/ÁREA
      * ============================================================================
-     * Si el campo dice vacante o si la persona renunció, relaciona automáticamente
-     * con los cargos y las áreas correspondientes para mantener el árbol 100% íntegro.
      */
     const HierarchyEngine = {
       buildTree(employees) {
         if (!employees || employees.length === 0) return null;
 
-        // Copia profunda y marcado de vacante
         const list = employees.map(emp => {
           const isVacant = Boolean(emp.isVacant || /^(vacante|posici[oó]n\s*vacante|disponible|sin\s*asignar)$/i.test((emp.nombre || "").trim()));
           return {
@@ -2382,7 +2334,7 @@
           }
         });
 
-        // Función para resolver jefe por Cargo y Área (Punto 3)
+        // Relación por cargo y área para cargos vacantes o jefes sin documento (Puntos 2 y 3)
         const findBossByCargoAndArea = (targetCargo, targetArea, targetGerencia) => {
           const normCargo = normalizeStr(targetCargo);
           if (!normCargo) return null;
@@ -2391,7 +2343,6 @@
           if (candidates.length === 0) return null;
           if (candidates.length === 1) return candidates[0];
 
-          // Desempate por Área y Gerencia
           const normArea = normalizeStr(targetArea);
           const normGer = normalizeStr(targetGerencia);
 
@@ -2407,17 +2358,17 @@
           return candidates[0];
         };
 
-        // 1. Vincular subordinados con líderes
+        // 1. Vincular cada colaborador con su jefe
         list.forEach(node => {
           let boss = null;
 
-          // Prioridad A: Por documento (Reporta A)
+          // A: Por documento
           if (node.reportaA && docMap.has(String(node.reportaA).trim())) {
             const candidate = docMap.get(String(node.reportaA).trim());
             if (candidate !== node) boss = candidate;
           }
 
-          // Prioridad B: Por Nombre a Quien Reporta (si no dice 'Vacante')
+          // B: Por nombre de jefe (si no dice 'Vacante')
           if (!boss && node.nombreReporta) {
             const isReportVacant = /^(vacante|posici[oó]n\s*vacante|sin\s*asignar)$/i.test(node.nombreReporta.trim());
             if (!isReportVacant) {
@@ -2426,13 +2377,11 @@
             }
           }
 
-          // Prioridad C: Por Cargo a Quien Reporta y Área (Puntos 2 y 3)
-          // Se activa cuando dice 'Vacante', o si renunció, o si no se especificó documento/nombre
+          // C: Por cargo a quien reporta y área (Puntos 2 y 3)
           if (!boss && node.cargoReporta) {
             boss = findBossByCargoAndArea(node.cargoReporta, node.area, node.gerencia);
 
-            // Si el cargo de jefe no existe en el listado (renunció y borraron su fila):
-            // Creamos automáticamente el nodo vacante para ese cargo y área
+            // Si el jefe no existe porque renunció o el puesto está en vacancia:
             if (!boss) {
               const dynamicDoc = `VAC-${cleanId(node.cargoReporta)}-${cleanId(node.area)}`;
               boss = {
@@ -2462,19 +2411,17 @@
           }
         });
 
-        // 2. Localizar nodo raíz principal (CEO / Alta Dirección)
+        // 2. Encontrar nodo raíz (CEO / Presidente)
         const roots = list.filter(n => !n._hasParent);
-
         if (roots.length === 0) return list[0];
 
         const ceoIndex = roots.findIndex(n => 
           /nivel\s*1/i.test(n.nivel) || 
-          /ceo|presidente|director\s*general|gerente\s*general/i.test(n.cargo)
+          /presidente|director\s*general|ceo|gerente\s*general/i.test(n.cargo)
         );
 
         const mainRoot = ceoIndex >= 0 ? roots[ceoIndex] : roots[0];
 
-        // Vincular huérfanos o raíces secundarias bajo el root principal
         roots.forEach(orphan => {
           if (orphan !== mainRoot) {
             mainRoot.children.push(orphan);
@@ -2488,7 +2435,7 @@
 
     /**
      * ============================================================================
-     * MÓDULO 6: RENDERIZADOR D3 & ZOOM INTELIGENTE (PUNTO 1)
+     * MÓDULO 6: RENDERIZADOR D3 & AUTO-ZOOM CENTRADO AL ABRIR GRUPO (PUNTO 2)
      * ============================================================================
      */
     const OrgChartRenderer = {
@@ -2516,9 +2463,8 @@
       },
 
       /**
-       * Contrae todo el árbol al estado inicial (Punto 1):
-       * El líder superior/CEO queda visible, pero todos los líderes de su equipo
-       * quedan colapsados con sus contadores +N de personas a cargo.
+       * Inicia siempre contraído (Punto 1):
+       * Cabeza visible y los equipos de líderes colapsados con sus contadores +N.
        */
       collapseToInitialState() {
         AppState.collapsedNodeIds.clear();
@@ -2531,9 +2477,6 @@
         });
       },
 
-      /**
-       * Colapsa absolutamente todos los nodos con subordinados
-       */
       collapseAll() {
         AppState.collapsedNodeIds.clear();
         if (!this.d3Root) return;
@@ -2543,23 +2486,19 @@
           }
         });
         this.renderHierarchyTree();
-        showToast("Organigrama completamente contraído");
+        this.setZoom100();
+        showToast("Organigrama contraído completamente");
       },
 
-      /**
-       * Expande toda la organización
-       */
       expandAll() {
         AppState.collapsedNodeIds.clear();
         this.renderHierarchyTree();
-        if (AppState.autoFitOnToggle) {
-          this.fitToScreen();
-        }
+        this.fitToScreen();
         showToast("Toda la organización expandida");
       },
 
       /**
-       * Fija el zoom exactamente al 100% (1:1) centrado horizontalmente (Punto 1)
+       * Fija el zoom exactamente al 100% (1:1) centrado horizontalmente
        */
       setZoom100() {
         const viewport = document.getElementById("chartViewport");
@@ -2576,6 +2515,94 @@
         d3.select("#chartViewport")
           .transition()
           .duration(450)
+          .call(this.zoomBehavior.transform, transform);
+      },
+
+      /**
+       * AUTO-ZOOM CENTRADO AL ABRIR UN GRUPO (PUNTO 2):
+       * Al hacer clic en '+', hace auto zoom, se centra dentro de la página,
+       * y queda ajustado al tamaño máximo que se vea todo ese grupo dentro de la pantalla.
+       */
+      zoomToGroup(documento) {
+        if (!this.d3Root) return;
+        const viewport = document.getElementById("chartViewport");
+        if (!viewport) return;
+
+        const width = viewport.clientWidth;
+        const height = viewport.clientHeight;
+
+        let targetNode = null;
+        this.d3Root.each(d => {
+          if (d.data.documento === documento) targetNode = d;
+        });
+
+        if (!targetNode) return;
+
+        // Obtener el líder y todos sus hijos/descendientes actualmente visibles
+        const groupNodes = targetNode.descendants();
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        groupNodes.forEach(d => {
+          if (d.x < minX) minX = d.x;
+          if (d.x > maxX) maxX = d.x;
+          if (d.y < minY) minY = d.y;
+          if (d.y > maxY) maxY = d.y;
+        });
+
+        const isPrivacy = AppState.isPrivacyActive;
+        const cardW = isPrivacy ? 255 : 275;
+        const cardH = isPrivacy ? 120 : 180;
+
+        // Bounding box total del grupo que se abrió
+        const padX = 80;
+        const padY = 90;
+        const totalW = (maxX - minX) + cardW + padX;
+        const totalH = (maxY - minY) + cardH + padY;
+
+        // Escala máxima que quepa en el recuadro de la pantalla
+        let scale = Math.min((width - 50) / totalW, (height - 60) / totalH);
+        scale = Math.max(0.25, Math.min(scale, 1.25));
+
+        const midX = (minX + maxX) / 2;
+        const midY = (minY + maxY) / 2;
+
+        const transform = d3.zoomIdentity
+          .translate((width / 2) - midX * scale, (height / 2) - midY * scale)
+          .scale(scale);
+
+        d3.select("#chartViewport")
+          .transition()
+          .duration(650)
+          .ease(d3.easeCubicOut)
+          .call(this.zoomBehavior.transform, transform);
+      },
+
+      /**
+       * Al colapsar un grupo con '−', se centra suavemente en el líder
+       */
+      centerOnNode(documento) {
+        if (!this.d3Root) return;
+        const viewport = document.getElementById("chartViewport");
+        if (!viewport) return;
+
+        const width = viewport.clientWidth;
+        const height = viewport.clientHeight;
+
+        let targetNode = null;
+        this.d3Root.each(d => {
+          if (d.data.documento === documento) targetNode = d;
+        });
+        if (!targetNode) return;
+
+        const currentK = AppState.zoomTransform.k || 1.0;
+        const transform = d3.zoomIdentity
+          .translate((width / 2) - targetNode.x * currentK, (height / 2) - targetNode.y * currentK)
+          .scale(currentK);
+
+        d3.select("#chartViewport")
+          .transition()
+          .duration(500)
+          .ease(d3.easeCubicOut)
           .call(this.zoomBehavior.transform, transform);
       },
 
@@ -2705,7 +2732,7 @@
               </span>
             </div>
 
-            <!-- Sección Personal (Ocultable en Modo Privacidad) -->
+            <!-- Sección Personal -->
             <div class="card-personal-section">
               <div class="card-avatar-ring ${isVacant ? 'vacant-avatar' : ''}">
                 ${isVacant ? `
@@ -2723,14 +2750,14 @@
                 )}
               </div>
               <div class="card-personal-info">
-                <div class="card-name ${isVacant ? 'vacant-name' : ''}" title="${escapeHtml(isVacant ? 'Posición Vacante' : emp.nombre)}">
+                <div class="card-name ${isVacant ? 'vacant-name' : ''}" title="${escapeHtml(isVacant ? 'Posición Vacante (En Selección)' : emp.nombre)}">
                   ${escapeHtml(isVacant ? 'Posición Vacante' : emp.nombre)}
                 </div>
                 <div class="card-doc">${isVacant ? '<span class="vacant-pill">En Convocatoria</span>' : `Doc: ${escapeHtml(emp.documento)}`}</div>
               </div>
             </div>
 
-            <!-- Sección Corporativa: Cargo y Área -->
+            <!-- Sección Corporativa -->
             <div class="card-corp-section">
               <div class="card-cargo" title="${escapeHtml(emp.cargo)}">${escapeHtml(emp.cargo)}</div>
               <div class="card-area" title="${escapeHtml(emp.area)}">
@@ -2742,9 +2769,9 @@
               </div>
             </div>
 
-            <!-- Botón Colapsar / Expandir -->
+            <!-- Botón Colapsar / Expandir (PUNTO 2) -->
             ${hasChildren ? `
-              <div class="collapse-handle ${isCollapsed ? 'collapsed' : ''}" data-doc="${emp.documento}" title="${isCollapsed ? 'Expandir equipo' : 'Colapsar equipo'}">
+              <div class="collapse-handle ${isCollapsed ? 'collapsed' : ''}" data-doc="${emp.documento}" title="${isCollapsed ? 'Expandir equipo y auto-ajustar a la pantalla' : 'Colapsar equipo'}">
                 ${isCollapsed ? `<span class="sub-count">+${emp.children.length}</span>` : '−'}
               </div>
             ` : ''}
@@ -2768,19 +2795,28 @@
       },
 
       /**
-       * Expande/contrae un líder.
-       * Respeta si el usuario prefiere Auto-ajustar zoom o mantener zoom manual (Punto 1).
+       * Expande/contrae con auto-zoom al grupo (Punto 2)
        */
       toggleCollapse(documento) {
-        if (AppState.collapsedNodeIds.has(documento)) {
+        const isExpanding = AppState.collapsedNodeIds.has(documento);
+
+        if (isExpanding) {
           AppState.collapsedNodeIds.delete(documento);
         } else {
           AppState.collapsedNodeIds.add(documento);
         }
         this.renderHierarchyTree();
 
-        if (AppState.autoFitOnToggle) {
-          this.fitToScreen();
+        if (isExpanding) {
+          // Auto-zoom ajustado al tamaño máximo del grupo que se abrió dentro de la pantalla
+          setTimeout(() => {
+            this.zoomToGroup(documento);
+          }, 80);
+        } else {
+          // Centrado suave en el líder
+          setTimeout(() => {
+            this.centerOnNode(documento);
+          }, 80);
         }
       },
 
@@ -3017,7 +3053,7 @@
 
           await new Promise(r => setTimeout(r, 250));
 
-          const filename = `Organigrama_Corporativo_${AppState.currentView === 'hierarchy' ? 'Jerarquico' : 'Transversal'}.pdf`;
+          const filename = `Organigrama_Moovia_${AppState.currentView === 'hierarchy' ? 'Jerarquico' : 'Transversal'}.pdf`;
 
           const canvas = await html2canvas(slideContainer, {
             scale: 1.25,
@@ -3155,10 +3191,10 @@
     }
 
     function getInitials(name) {
-      if (!name || typeof name !== 'string') return "CO";
+      if (!name || typeof name !== 'string') return "MV";
       const clean = name.trim().replace(/^(ing\.|dr\.|dra\.|lic\.|mg\.|phd\.|sr\.|sra\.)\s*/i, '');
       const parts = clean.split(/\s+/).filter(Boolean);
-      if (parts.length === 0) return "CO";
+      if (parts.length === 0) return "MV";
       if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
@@ -3179,14 +3215,84 @@
 
     /**
      * ============================================================================
-     * MÓDULO 9: INICIALIZACIÓN Y EVENT LISTENERS
+     * MÓDULO 9: CONTROL DEL MENÚ COLAPSABLE (PUNTO 3: GANA 25% DE ESPACIO)
+     * ============================================================================
+     */
+    const MenuCollapseController = {
+      MENU_STORAGE_KEY: "organigrama_menu_collapsed_v2",
+
+      init() {
+        const btnToggleMenu = document.getElementById("btnToggleMenu");
+        const floatingMenuTab = document.getElementById("floatingMenuTab");
+        const toggleMenuText = document.getElementById("toggleMenuText");
+        const toggleMenuIcon = document.getElementById("toggleMenuIcon");
+
+        const isSavedCollapsed = localStorage.getItem(this.MENU_STORAGE_KEY) === "true";
+        if (isSavedCollapsed) {
+          this.setCollapsed(true, false);
+        }
+
+        if (btnToggleMenu) {
+          btnToggleMenu.addEventListener("click", () => {
+            const nextState = !document.body.classList.contains("menu-collapsed");
+            this.setCollapsed(nextState, true);
+          });
+        }
+
+        if (floatingMenuTab) {
+          floatingMenuTab.addEventListener("click", () => {
+            this.setCollapsed(false, true);
+          });
+        }
+
+        // Atajo de teclado: Tecla 'M' para alternar menú
+        window.addEventListener("keydown", (e) => {
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+          if (e.key === 'm' || e.key === 'M') {
+            const nextState = !document.body.classList.contains("menu-collapsed");
+            this.setCollapsed(nextState, true);
+          }
+        });
+      },
+
+      setCollapsed(collapsed, notify = false) {
+        AppState.isMenuCollapsed = collapsed;
+        document.body.classList.toggle("menu-collapsed", collapsed);
+        localStorage.setItem(this.MENU_STORAGE_KEY, collapsed ? "true" : "false");
+
+        const toggleMenuText = document.getElementById("toggleMenuText");
+        const toggleMenuIcon = document.getElementById("toggleMenuIcon");
+
+        if (collapsed) {
+          if (toggleMenuText) toggleMenuText.textContent = "Mostrar Menú";
+          if (toggleMenuIcon) toggleMenuIcon.style.transform = "rotate(180deg)";
+          if (notify) showToast("Menú oculto. Espacio de pantalla maximizado (Presiona 'M' para desplegar)");
+        } else {
+          if (toggleMenuText) toggleMenuText.textContent = "Ocultar Menú";
+          if (toggleMenuIcon) toggleMenuIcon.style.transform = "rotate(0deg)";
+          if (notify) showToast("Menú de herramientas visible");
+        }
+
+        // Reajustar viewport D3 suavemente
+        setTimeout(() => {
+          if (OrgChartRenderer.zoomBehavior) {
+            OrgChartRenderer.render();
+          }
+        }, 150);
+      }
+    };
+
+    /**
+     * ============================================================================
+     * MÓDULO 10: INICIALIZACIÓN Y EVENT LISTENERS
      * ============================================================================
      */
     document.addEventListener("DOMContentLoaded", async () => {
-      // 1. Inicializar Logo
+      // 1. Inicializar Logo y Menú Colapsable
       LogoService.init();
+      MenuCollapseController.init();
 
-      // 2. Determinar origen de datos prioritario: LocalStorage -> JSON pregrabado -> Datos muestra
+      // 2. Determinar origen de datos: LocalStorage -> JSON pregrabado -> Datos muestra
       let initialEmployees = StorageService.load();
 
       if (!initialEmployees) {
@@ -3204,21 +3310,21 @@
       OrgChartRenderer.init();
       OrgChartRenderer.render();
 
-      // 4. Cumplimiento Punto 1: Iniciar SIEMPRE contraído y con zoom al 100%
+      // 4. Iniciar contraído al 100%
       setTimeout(() => {
         OrgChartRenderer.collapseToInitialState();
         OrgChartRenderer.render();
         OrgChartRenderer.setZoom100();
       }, 150);
 
-      // --- MANEJO DE ARCHIVOS EXCEL ---
+      // --- MANEJO DE SUBIDA DE EXCEL (PUNTO 1: AUTO-GUARDADO JSON SIN REPROCESOS) ---
       const fileInput = document.getElementById("excelFileInput");
       const btnUploadExcel = document.getElementById("btnUploadExcel");
 
       async function handleExcelFile(file) {
         if (!file) return;
         try {
-          showToast("Procesando archivo Excel...");
+          showToast("Procesando y guardando archivo Excel...");
           const parsedData = await ExcelService.parseUploadedFile(file);
           
           if (!parsedData || parsedData.length === 0) {
@@ -3228,15 +3334,16 @@
           AppState.rawEmployees = parsedData;
           StorageService.save(parsedData, file.name);
 
-          // Al subir archivo, renderizar contraído con zoom 100%
+          // AUTO-GUARDAR COMO .JSON DENTRO DEL PROYECTO SIN REPROCESOS (PUNTO 1)
+          await StorageService.autoSaveToProject(parsedData);
+
+          // Renderizar contraído centrado a 100%
           OrgChartRenderer.render();
           setTimeout(() => {
             OrgChartRenderer.collapseToInitialState();
             OrgChartRenderer.render();
             OrgChartRenderer.setZoom100();
           }, 150);
-
-          showToast(`¡Éxito! ${parsedData.length} colaboradores importados.`);
         } catch (err) {
           alert(`Error al procesar el Excel: ${err.message}`);
           console.error(err);
@@ -3251,7 +3358,7 @@
         if (file) handleExcelFile(file);
       });
 
-      // --- GUARDAR Y CARGAR JSON (PUNTO 5) ---
+      // --- GUARDAR Y CARGAR JSON MANUAL ---
       const jsonFileInput = document.getElementById("jsonFileInput");
       const btnSaveJSON = document.getElementById("btnSaveJSON");
       const btnUploadJSON = document.getElementById("btnUploadJSON");
@@ -3462,25 +3569,6 @@
       document.getElementById("btnZoomFit").addEventListener("click", () => OrgChartRenderer.fitToScreen());
       document.getElementById("btnZoom100").addEventListener("click", () => OrgChartRenderer.setZoom100());
 
-      // Toggle Modo Zoom (Punto 1: Auto-ajuste o Manual)
-      const btnToggleZoomMode = document.getElementById("btnToggleZoomMode");
-      const zoomModeIcon = document.getElementById("zoomModeIcon");
-
-      btnToggleZoomMode.addEventListener("click", () => {
-        AppState.autoFitOnToggle = !AppState.autoFitOnToggle;
-        if (AppState.autoFitOnToggle) {
-          btnToggleZoomMode.classList.add("active-auto");
-          zoomModeIcon.textContent = "🎯";
-          btnToggleZoomMode.title = "Modo Zoom: Auto-Ajuste Activado (Clic para volver a Manual)";
-          showToast("Modo Zoom: Auto-ajustar al expandir/colapsar activado");
-        } else {
-          btnToggleZoomMode.classList.remove("active-auto");
-          zoomModeIcon.textContent = "🖐️";
-          btnToggleZoomMode.title = "Modo Zoom: Manual (Clic para activar Auto-Ajuste)";
-          showToast("Modo Zoom: Manual fijado (no altera el zoom al expandir)");
-        }
-      });
-
       // Modal Detalles
       document.getElementById("modalCloseBtn").addEventListener("click", () => ModalService.close());
       document.getElementById("collaboratorModal").addEventListener("click", (e) => {
@@ -3495,7 +3583,7 @@
       });
 
       window.addEventListener("resize", () => {
-        if (AppState.currentView === 'hierarchy' && AppState.autoFitOnToggle) {
+        if (AppState.currentView === 'hierarchy') {
           OrgChartRenderer.fitToScreen();
         }
       });
