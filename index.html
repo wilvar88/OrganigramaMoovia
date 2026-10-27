@@ -1538,7 +1538,7 @@
         <span>Descargar Plantilla</span>
       </button>
 
-      <!-- Botón Guardar JSON para Vercel / Git -->
+      <!-- Botones Guardar JSON y Cargar JSON comentados (ocultos de la interfaz)
       <button class="nm-btn" id="btnSaveJSON" title="Descargar organigrama.json para guardarlo en la carpeta /data del proyecto y subir a Vercel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
@@ -1548,13 +1548,13 @@
         <span>Guardar JSON</span>
       </button>
 
-      <!-- Botón Cargar JSON -->
       <button class="nm-btn" id="btnUploadJSON" title="Cargar archivo .json previamente exportado">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
         </svg>
         <span>Cargar JSON</span>
       </button>
+      -->
 
       <!-- Botón Guía e Instrucciones -->
       <button class="nm-btn" id="btnHelpInstructions" title="¿Cómo funciona la jerarquía, cargos vacantes y guardado?">
@@ -3358,16 +3358,20 @@
         if (file) handleExcelFile(file);
       });
 
-      // --- GUARDAR Y CARGAR JSON MANUAL ---
+      // --- GUARDAR Y CARGAR JSON MANUAL (OCULTO / OPCIONAL) ---
       const jsonFileInput = document.getElementById("jsonFileInput");
       const btnSaveJSON = document.getElementById("btnSaveJSON");
       const btnUploadJSON = document.getElementById("btnUploadJSON");
 
-      btnSaveJSON.addEventListener("click", () => {
-        StorageService.downloadJSON(AppState.rawEmployees);
-      });
+      if (btnSaveJSON) {
+        btnSaveJSON.addEventListener("click", () => {
+          StorageService.downloadJSON(AppState.rawEmployees);
+        });
+      }
 
-      btnUploadJSON.addEventListener("click", () => jsonFileInput.click());
+      if (btnUploadJSON && jsonFileInput) {
+        btnUploadJSON.addEventListener("click", () => jsonFileInput.click());
+      }
       jsonFileInput.addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
